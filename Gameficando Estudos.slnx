@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="GameficandoEstudos.Application/GameficandoEstudos.Application.csproj" Id="6317dfc3-df5e-4feb-94d3-59cee42b3769" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="GameficandoEstudos.Application.Tests/GameficandoEstudos.Application.Tests.csproj" Id="5c3c5543-a2a0-4061-848f-b39c22ce3f13" />
+  </Folder>
+  <Project Path="Gameficando Estudos/Gameficando Estudos.csproj" />
+</Solution>
