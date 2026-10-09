@@ -1,0 +1,11 @@
+﻿using GameficandoEstudos.Domain.Entities;
+
+namespace GameficandoEstudos.Application.Interfaces
+{
+    public interface IMateriaRepository
+    {
+        Task<Materia> AdicionarAsync(Materia materia);
+        Task<Materia?> ObterPorIdAsync(int id);
+        Task<IEnumerable<Materia>> ObterPorProfessorAsync(int idProfessor);
+    }
+}

@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GameficandoEstudos.Application\GameficandoEstudos.Application.csproj" />
+    <ProjectReference Include="..\GameficandoEstudos.Domain\GameficandoEstudos.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

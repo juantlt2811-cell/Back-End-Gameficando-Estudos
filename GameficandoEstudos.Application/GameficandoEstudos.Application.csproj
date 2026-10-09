@@ -10,4 +10,8 @@
     <Folder Include="DTOs\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GameficandoEstudos.Domain\GameficandoEstudos.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
