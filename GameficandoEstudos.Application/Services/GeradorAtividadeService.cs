@@ -1,6 +1,10 @@
 ﻿using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
-
+using GameficandoEstudos.Domain.Enums; 
+using System;
+using System.Linq;
+using System.Text.Json; 
+using System.Threading.Tasks;
 
 namespace GameficandoEstudos.Application.Services
 {
@@ -11,7 +15,11 @@ namespace GameficandoEstudos.Application.Services
         private readonly IAtividadeRepository _atividadeRepository;
         private readonly IMateriaRepository _materiaRepository;
 
-        public GeradorAtividadeService(IVectorSearchService vectorSearch, ILlmService llmService, IAtividadeRepository atividadeRepository, IMateriaRepository materiaRepository)
+        public GeradorAtividadeService(
+            IVectorSearchService vectorSearch,
+            ILlmService llmService,
+            IAtividadeRepository atividadeRepository,
+            IMateriaRepository materiaRepository)
         {
             _vectorSearch = vectorSearch;
             _llmService = llmService;
@@ -19,14 +27,11 @@ namespace GameficandoEstudos.Application.Services
             _materiaRepository = materiaRepository;
         }
 
-
-        public async Task<string> GerarAtividadeAsync(int idMateria, string temaDesejado, string tipoAtividade)
+        public async Task<string> GerarAtividadeAsync(int idMateria, string temaDesejado, TipoAtividade tipoAtividade)
         {
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)
                 throw new InvalidOperationException("Matéria não encontrada");
-            if(tipoAtividade == null)
-                throw new ArgumentNullException(nameof(tipoAtividade), "Tipo de atividade não informado");
 
             var chunksRelevantes = await _vectorSearch.BuscarChunksRelevantesAsync(idMateria, temaDesejado);
 
@@ -35,22 +40,47 @@ namespace GameficandoEstudos.Application.Services
                 throw new InvalidOperationException("Nenhuma fonte encontrada para essa matéria e tema");
             }
 
+            
             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
-                $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
-                $"Formate adequadamente para esse tipo de atividade.";
+                         $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
+                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com duas propriedades: " +
+                         "\"conteudo\" (contendo o enunciado da questão e as opções de A a D, se for múltipla escolha) e " +
+                         "\"gabarito\" (contendo apenas a resposta correta esperada, sem explicações). " +
+                         "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
 
-            var resposta = await _llmService.GerarRespostaAsync(prompt);
+            var respostaLlm = await _llmService.GerarRespostaAsync(prompt);
 
+            
+            var jsonLimpo = respostaLlm.Replace("```json", "").Replace("```", "").Trim();
+
+            
+            RespostaIaDto atividadeGerada;
+            try
+            {
+                atividadeGerada = JsonSerializer.Deserialize<RespostaIaDto>(jsonLimpo, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                                  ?? throw new InvalidOperationException("Falha ao desserializar o JSON do LLM.");
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException($"O LLM não retornou um JSON válido. Resposta original: {respostaLlm}", ex);
+            }
+
+            
             var novaAtividade = new Atividade(
                 nome: temaDesejado,
                 tipo: tipoAtividade,
-                conteudo: resposta,
+                conteudo: atividadeGerada.Conteudo,
+                gabarito: atividadeGerada.Gabarito,
                 idMateria: idMateria
             );
+
             await _atividadeRepository.AdicionarAsync(novaAtividade);
-            return resposta;
+
+            
+            return jsonLimpo;
         }
 
+        
+        private record RespostaIaDto(string Conteudo, string Gabarito);
     }
 }
-
