@@ -7,12 +7,14 @@ namespace GameficandoEstudos.Domain.Entities
     {
         public int Id { get; private set; }
         public string Nome { get; private set; }
-        public TipoAtividade Tipo { get; private set; } 
+        public TipoAtividade Tipo { get; private set; }
         public string Conteudo { get; private set; }
-        public string Gabarito { get; private set; } 
+        public string Gabarito { get; private set; }
         public int IdMateria { get; private set; }
         public DateTime CriadoEm { get; private set; }
         public DateTime AtualizadoEm { get; private set; }
+
+        public bool Ativa { get; private set; }
 
         public Materia Materia { get; private set; }
 
@@ -34,6 +36,14 @@ namespace GameficandoEstudos.Domain.Entities
             Gabarito = gabarito;
             IdMateria = idMateria;
             CriadoEm = DateTime.UtcNow;
+            AtualizadoEm = DateTime.UtcNow;
+
+            Ativa = true;
+        }
+
+        public void Inativar()
+        {
+            Ativa = false;
             AtualizadoEm = DateTime.UtcNow;
         }
     }
