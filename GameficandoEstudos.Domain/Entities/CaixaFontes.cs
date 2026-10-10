@@ -20,5 +20,13 @@
             CriadoEm = DateTime.UtcNow;
             AtualizadoEm = DateTime.UtcNow;
         }
+        private readonly List<FonteChunks> _chunks = new();
+        public IReadOnlyCollection<FonteChunks> Chunks => _chunks.AsReadOnly();
+
+        public void AdicionarChunk(FonteChunks chunk)
+        {
+            ArgumentNullException.ThrowIfNull(chunk, nameof(chunk));
+            _chunks.Add(chunk);
+        }
     }
 }

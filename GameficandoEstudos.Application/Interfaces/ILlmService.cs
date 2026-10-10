@@ -3,5 +3,6 @@
     public interface ILlmService
     {
         Task<string> GerarRespostaAsync(string prompt);
+        Task<float[]> GerarEmbeddingsAsync(string texto);
     }
 }
