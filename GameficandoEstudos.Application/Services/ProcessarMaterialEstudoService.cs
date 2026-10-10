@@ -1,8 +1,6 @@
 ﻿using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace GameficandoEstudos.Application.Services
 {
