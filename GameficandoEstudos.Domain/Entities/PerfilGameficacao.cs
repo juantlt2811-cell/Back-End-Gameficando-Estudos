@@ -4,30 +4,60 @@ namespace GameficandoEstudos.Domain.Entities
 {
     public class PerfilGamificacao
     {
-        public int PontosXP { get; private set; }
-        public int Nivel { get; private set; }
+        public int OfensivaAtual { get; private set; }
+        public int MaiorOfensiva { get; private set; }
+        public int AtividadesFeitasHoje { get; private set; }
+        public DateTime? UltimaAtividadeRealizadaEm { get; private set; }
+
+        public const int LIMITE_DIARIO = 3;
 
         public PerfilGamificacao()
         {
-            PontosXP = 0;
-            Nivel = 1;
+            OfensivaAtual = 0;
+            MaiorOfensiva = 0;
+            AtividadesFeitasHoje = 0;
         }
 
-        public void AdicionarXP(int xp)
+        public bool PodeRealizarAtividade()
         {
-            if (xp < 0) throw new ArgumentException("XP não pode ser negativo");
+            var hoje = DateTime.UtcNow.Date;
 
-            PontosXP += xp;
-            CalcularLevelUp();
+            if (UltimaAtividadeRealizadaEm?.Date == hoje)
+                return AtividadesFeitasHoje < LIMITE_DIARIO;
+
+            return true;
         }
 
-        private void CalcularLevelUp()
+        public void RegistrarAtividadeConcluida()
         {
-            // Regra simples para o MVP: a cada 1000 XP, sobe 1 nível
-            if (PontosXP >= Nivel * 1000)
+            if (!PodeRealizarAtividade())
+                throw new InvalidOperationException("Limite diário de atividades atingido. Descanse e volte amanhã!");
+
+            var hoje = DateTime.UtcNow.Date;
+            var dataUltima = UltimaAtividadeRealizadaEm?.Date;
+
+            if (dataUltima == hoje)
             {
-                Nivel++;
+                AtividadesFeitasHoje++;
             }
+            else
+            {
+                AtividadesFeitasHoje = 1;
+
+                if (dataUltima == hoje.AddDays(-1))
+                {
+                    OfensivaAtual++;
+                }
+                else
+                {
+                    OfensivaAtual = 1;
+                }
+            }
+
+            if (OfensivaAtual > MaiorOfensiva)
+                MaiorOfensiva = OfensivaAtual;
+
+            UltimaAtividadeRealizadaEm = DateTime.UtcNow;
         }
     }
 }

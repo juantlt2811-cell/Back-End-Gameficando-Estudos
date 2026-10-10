@@ -22,7 +22,6 @@ namespace GameficandoEstudos.Application.Services
 
         public async Task<ResultadoAvaliacaoDto> ResponderAsync(int idUsuario, int idAtividade, string respostaAluno)
         {
-           
             if (string.IsNullOrWhiteSpace(respostaAluno))
                 throw new ArgumentException("A resposta do aluno não pode ser vazia.", nameof(respostaAluno));
 
@@ -32,6 +31,9 @@ namespace GameficandoEstudos.Application.Services
 
             if (usuario.Tipo != TipoUsuario.Aluno)
                 throw new UnauthorizedAccessException("Apenas alunos podem responder atividades.");
+
+            if (!usuario.Gamificacao!.PodeRealizarAtividade())
+                throw new InvalidOperationException("Limite diário de atividades atingido. Volte amanhã!");
 
             var atividade = await _atividadeRepository.ObterPorIdAsync(idAtividade);
             if (atividade == null)
@@ -43,7 +45,6 @@ namespace GameficandoEstudos.Application.Services
             {
                 bool acertou = respostaAluno.Trim().Equals(atividade.Gabarito.Trim(), StringComparison.OrdinalIgnoreCase);
                 string feedback = acertou ? "Resposta correta!" : "Resposta incorreta.";
-
                 resultadoAvaliacao = new ResultadoAvaliacaoDto(acertou, feedback);
             }
             else
@@ -51,11 +52,8 @@ namespace GameficandoEstudos.Application.Services
                 resultadoAvaliacao = await _llmService.AvaliarRespostaAsync(atividade.Conteudo, respostaAluno, atividade.Gabarito);
             }
 
-            if (resultadoAvaliacao.Aprovado)
-            {
-                usuario.Gamificacao!.AdicionarXP(100);
-                await _usuarioRepository.AtualizarAsync(usuario);
-            }
+            usuario.Gamificacao.RegistrarAtividadeConcluida();
+            await _usuarioRepository.AtualizarAsync(usuario);
 
             return resultadoAvaliacao;
         }
