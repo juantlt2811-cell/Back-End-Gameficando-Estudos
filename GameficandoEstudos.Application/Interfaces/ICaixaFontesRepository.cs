@@ -11,5 +11,6 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<CaixaFontes?> ObterPorIdAsync(int id);
         Task<CaixaFontes> ObterPorMateriaAsync(int idMateria);
         Task<CaixaFontes> AtualizarAsync(CaixaFontes caixaFontes);
+        Task RemoverChunksPorTituloAsync(int idCaixaFontes, string tituloMaterial);
     }
 }
