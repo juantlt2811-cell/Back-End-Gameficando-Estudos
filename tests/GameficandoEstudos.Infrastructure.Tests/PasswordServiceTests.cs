@@ -28,7 +28,7 @@ namespace GameficandoEstudos.Infrastructure.Tests
 
             bool isValida = service.VerifyPassword(hashGerado, senhaOriginal);
 
-            // Assert
+            
             isValida.Should().BeTrue();
         }
 

@@ -28,5 +28,12 @@
             ArgumentNullException.ThrowIfNull(chunk, nameof(chunk));
             _chunks.Add(chunk);
         }
+        public void RemoverChunksPorDocumento(Guid documentoId)
+        {
+            if (documentoId == Guid.Empty) throw new ArgumentException("Id inválido.", nameof(documentoId));
+
+            _chunks.RemoveAll(c => c.DocumentoId == documentoId);
+            AtualizadoEm = DateTime.UtcNow;
+        }
     }
 }

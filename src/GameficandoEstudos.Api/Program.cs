@@ -1,26 +1,34 @@
 using GameficandoEstudos.Application.Interfaces;
-using GameficandoEstudos.Application.Services;
+using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.Services.MateriaService;
+using GameficandoEstudos.Application.Services.UsuarioService;
+using GameficandoEstudos.Infrastructure.Services;
+using GameficandoEstudos.Infrastructure.Repositories;
 using GameficandoEstudos.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Linq;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Adiciona os Controladores
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 2. Injeção de Dependência (Ligando as Interfaces às Implementações)
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<CadastrarUsuarioService>();
-builder.Services.AddScoped<AutenticarUsuarioService>();
+var applicationAssembly = typeof(CriarMateriaService).Assembly;
 
-// Obs: O IUsuarioRepository será injetado aqui quando criarmos o Entity Framework!
+var servicosApp = applicationAssembly.GetTypes()
+    .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Service"));
 
-// 3. Configuração do JWT (O "Segurança" da porta)
+foreach (var servico in servicosApp)
+{
+    builder.Services.AddScoped(servico);
+}
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -31,7 +39,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = false, // Em um cenário real, você pode validar a audiência também
+        ValidateAudience = false, 
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Emissor"],
@@ -39,10 +47,14 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:ChaveSecreta"] ?? "ChavePadraoSuperSecreta123!"))
     };
 });
-
+builder.Services.AddSingleton<ICaixaFontesRepository, FakeCaixaFontesRepository>();
+builder.Services.AddSingleton<IUsuarioRepository, FakeUsuarioRepository>();
+builder.Services.AddSingleton<IMateriaRepository, FakeMateriaRepository>();
+builder.Services.AddSingleton<IAtividadeRepository, FakeAtividadeRepository>();
+builder.Services.AddSingleton<IVectorSearchService, FakeVectorSearchService>();
+builder.Services.AddSingleton<ILlmService, FakeLlmService>();
 var app = builder.Build();
 
-// 4. Configura o pipeline de requisições HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -51,7 +63,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Habilita a Autenticação ANTES da Autorização
 app.UseAuthentication(); 
 app.UseAuthorization();
 

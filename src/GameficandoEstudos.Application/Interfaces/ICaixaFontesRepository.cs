@@ -1,4 +1,5 @@
 ﻿using GameficandoEstudos.Domain.Entities;
+using GameficandoEstudos.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -11,6 +12,7 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<CaixaFontes?> ObterPorIdAsync(int id);
         Task<CaixaFontes> ObterPorMateriaAsync(int idMateria);
         Task<CaixaFontes> AtualizarAsync(CaixaFontes caixaFontes);
-        Task RemoverChunksPorTituloAsync(int idCaixaFontes, string tituloMaterial);
+        Task RemoverChunksPorDocumentoIdAsync(Guid documentoId);
+        Task<IEnumerable<ResumoOrigem>> PesquisarResumoMateriaisAsync(int idMateria, string? termoBusca);
     }
 }

@@ -46,5 +46,16 @@ namespace GameficandoEstudos.Domain.Entities
             Ativa = false;
             AtualizadoEm = DateTime.UtcNow;
         }
+        public void Atualizar(string nome, string conteudo, string gabarito)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));
+            ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
+            ArgumentException.ThrowIfNullOrEmpty(gabarito, nameof(gabarito));
+
+            Nome = nome;
+            Conteudo = conteudo;
+            Gabarito = gabarito;
+            AtualizadoEm = DateTime.UtcNow;
+        }
     }
 }

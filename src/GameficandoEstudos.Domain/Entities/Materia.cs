@@ -29,6 +29,12 @@
             CriadoEm = DateTime.UtcNow;
             AtualizadoEm = DateTime.UtcNow;
         }
+        public void Atualizar(string nome, int cargaHoraria, string dificuldade)
+        {
+            Nome = nome;
+            CargaHoraria = cargaHoraria;
+            Dificuldade = dificuldade;
+        }
     }
 }
 

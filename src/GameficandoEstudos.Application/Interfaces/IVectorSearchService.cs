@@ -2,6 +2,6 @@
 {
     public interface IVectorSearchService
     {
-        Task<List<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado);
+        Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado);
     }
 }

@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>199d08bf-85af-4b9c-b261-405e399d4b11</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,10 +17,6 @@
     <ProjectReference Include="..\GameficandoEstudos.Application\GameficandoEstudos.Application.csproj" />
     <ProjectReference Include="..\GameficandoEstudos.Domain\GameficandoEstudos.Domain.csproj" />
     <ProjectReference Include="..\GameficandoEstudos.Infrastructure\GameficandoEstudos.Infrastructure.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>
