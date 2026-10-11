@@ -1,4 +1,4 @@
-﻿namespace GameficandoEstudos.Domain.Entities
+﻿namespace GameficandoEstudos.Domain.Enums
 {
     public enum TipoUsuario
     {

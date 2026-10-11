@@ -1,4 +1,5 @@
 ﻿using GameficandoEstudos.Domain.Entities;
+using GameficandoEstudos.Domain.Enums;
 
 namespace GameficandoEstudos.Application.Interfaces
 {
@@ -8,5 +9,8 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<Usuario?> ObterPorIdAsync(int id);
         Task<IEnumerable<Usuario?>> ObterUsuariosPorTipoAsync(TipoUsuario tipoUsuario);
         Task<Usuario> AtualizarAsync(Usuario usuario);
+        Task<bool> ExisteEmailAsync(string email);
+
+        Task<Usuario?> ObterPorEmailAsync(string email);
     }
 }

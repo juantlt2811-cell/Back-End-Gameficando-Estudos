@@ -1,5 +1,6 @@
 ﻿using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
+using GameficandoEstudos.Domain.Enums;
 
 namespace GameficandoEstudos.Application.Services
 {

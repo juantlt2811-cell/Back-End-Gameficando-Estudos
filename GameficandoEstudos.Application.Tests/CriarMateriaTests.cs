@@ -2,6 +2,7 @@
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services;
 using GameficandoEstudos.Domain.Entities;
+using GameficandoEstudos.Domain.Enums;
 using Moq;
 
 namespace GameficandoEstudos.Application.Tests

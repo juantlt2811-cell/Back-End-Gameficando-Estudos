@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="GameficandoEstudos.Application/GameficandoEstudos.Application.csproj" Id="6317dfc3-df5e-4feb-94d3-59cee42b3769" />
     <Project Path="GameficandoEstudos.Domain/GameficandoEstudos.Domain.csproj" Id="d9b56894-7328-49fa-a96c-a0df5f780155" />
+    <Project Path="GameficandoEstudos.Infrastructure/GameficandoEstudos.Infrastructure.csproj" Id="e3dabdce-1d8a-4704-af05-11d394f5fa1f" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="GameficandoEstudos.Application.Tests/GameficandoEstudos.Application.Tests.csproj" Id="5c3c5543-a2a0-4061-848f-b39c22ce3f13" />
