@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/GameficandoEstudos.Api/GameficandoEstudos.Api.csproj" />
+    <Project Path="src/GameficandoEstudos.Application/GameficandoEstudos.Application.csproj" />
+    <Project Path="src/GameficandoEstudos.Domain/GameficandoEstudos.Domain.csproj" />
+    <Project Path="src/GameficandoEstudos.Infrastructure/GameficandoEstudos.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/GameficandoEstudos.Application.Tests/GameficandoEstudos.Application.Tests.csproj" />
+    <Project Path="tests/GameficandoEstudos.Infrastructure.Tests/GameficandoEstudos.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

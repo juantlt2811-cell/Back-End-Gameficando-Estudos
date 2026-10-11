@@ -1,0 +1,6 @@
+@GameficandoEstudos.Api_HostAddress = http://localhost:5115
+
+GET {{GameficandoEstudos.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

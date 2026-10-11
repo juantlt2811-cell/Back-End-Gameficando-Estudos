@@ -17,8 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GameficandoEstudos.Domain\GameficandoEstudos.Domain.csproj" />
-    <ProjectReference Include="..\GameficandoEstudos.Infrastructure\GameficandoEstudos.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\GameficandoEstudos.Domain\GameficandoEstudos.Domain.csproj" />
+    <ProjectReference Include="..\..\src\GameficandoEstudos.Infrastructure\GameficandoEstudos.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
