@@ -6,6 +6,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="GameficandoEstudos.Application.Tests/GameficandoEstudos.Application.Tests.csproj" Id="5c3c5543-a2a0-4061-848f-b39c22ce3f13" />
+    <Project Path="GameficandoEstudos.Infrastructure.Tests/GameficandoEstudos.Infrastructure.Tests.csproj" Id="3e82f095-0bf0-4e5e-aa3e-ed1ef3132078" />
   </Folder>
   <Project Path="Gameficando Estudos/Gameficando Estudos.csproj" />
 </Solution>
