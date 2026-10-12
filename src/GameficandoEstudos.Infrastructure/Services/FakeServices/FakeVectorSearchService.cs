@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace GameficandoEstudos.Infrastructure.Services
+namespace GameficandoEstudos.Infrastructure.Services.FakeServices
 {
     public class FakeVectorSearchService : IVectorSearchService
     {

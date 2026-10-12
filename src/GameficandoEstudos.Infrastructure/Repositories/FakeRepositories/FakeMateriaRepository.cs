@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace GameficandoEstudos.Infrastructure.Repositories
+namespace GameficandoEstudos.Infrastructure.Repositories.FakeRepositories
 {
     public class FakeMateriaRepository : IMateriaRepository
     {

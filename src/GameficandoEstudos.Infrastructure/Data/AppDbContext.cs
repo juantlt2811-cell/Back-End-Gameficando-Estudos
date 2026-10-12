@@ -84,7 +84,7 @@ namespace GameficandoEstudos.Infrastructure.Data
                 b.Property(f => f.Origem).IsRequired().HasMaxLength(200);
 
                 b.Property(f => f.Embeddings)
-                 .HasColumnType("vector(1024)")
+                 .HasColumnType("vector(768)")
                  .HasConversion(
                      v => new Vector(v),    
                      v => v.ToArray()    

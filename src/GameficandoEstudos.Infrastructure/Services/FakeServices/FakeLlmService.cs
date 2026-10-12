@@ -2,7 +2,7 @@
 using GameficandoEstudos.Application.Interfaces;
 using System.Threading.Tasks;
 
-namespace GameficandoEstudos.Infrastructure.Services
+namespace GameficandoEstudos.Infrastructure.Services.FakeServices
 {
     public class FakeLlmService : ILlmService
     {

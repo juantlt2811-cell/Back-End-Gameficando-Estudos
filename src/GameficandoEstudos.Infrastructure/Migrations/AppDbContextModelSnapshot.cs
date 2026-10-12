@@ -120,7 +120,7 @@ namespace GameficandoEstudos.Infrastructure.Migrations
 
                     b.Property<Vector>("Embeddings")
                         .IsRequired()
-                        .HasColumnType("vector(1024)");
+                        .HasColumnType("vector(768)");
 
                     b.Property<int>("IdCaixaFonte")
                         .HasColumnType("integer");

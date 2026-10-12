@@ -1,15 +1,17 @@
-using Npgsql;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using GameficandoEstudos.Infrastructure.Data;
 using GameficandoEstudos.Infrastructure.Repositories;
+using GameficandoEstudos.Infrastructure.Repositories.FakeRepositories;
 using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
+using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -39,9 +41,11 @@ var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
 dataSourceBuilder.UseVector();
 var dataSource = dataSourceBuilder.Build();
 
-// Repassa a fonte de dados pronta para o Entity Framework
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(dataSource, o => o.UseVector()));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        x => x.UseVector() 
+    ));
 
 builder.Services.AddAuthentication(options =>
 {
@@ -61,12 +65,12 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:ChaveSecreta"] ?? "ChavePadraoSuperSecreta123!"))
     };
 });
-builder.Services.AddSingleton<ICaixaFontesRepository, FakeCaixaFontesRepository>();
-builder.Services.AddSingleton<IUsuarioRepository, FakeUsuarioRepository>();
-builder.Services.AddSingleton<IMateriaRepository, FakeMateriaRepository>();
-builder.Services.AddSingleton<IAtividadeRepository, FakeAtividadeRepository>();
-builder.Services.AddSingleton<IVectorSearchService, FakeVectorSearchService>();
-builder.Services.AddSingleton<ILlmService, FakeLlmService>();
+builder.Services.AddScoped<ICaixaFontesRepository, CaixaFontesRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
+builder.Services.AddScoped<IAtividadeRepository, AtividadeRepository>();
+builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
+builder.Services.AddHttpClient<ILlmService, LlmService>();
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
