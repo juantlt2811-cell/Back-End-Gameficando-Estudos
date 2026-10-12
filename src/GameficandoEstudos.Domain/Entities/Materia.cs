@@ -12,6 +12,7 @@
 
         public Usuario Professor { get; private set; }
 
+        private Materia() { }
         public Materia(string nome, int cargaHoraria, string dificuldade, int idProfessor)
         {
             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));

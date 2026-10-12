@@ -10,6 +10,7 @@
 
         public Materia Materia { get; private set; }
 
+        private CaixaFontes() { }
         public CaixaFontes(string nome, int idMateria)
         {
             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));

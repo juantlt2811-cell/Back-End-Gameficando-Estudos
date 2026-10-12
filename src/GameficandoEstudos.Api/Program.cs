@@ -1,15 +1,18 @@
+using Npgsql;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
-using GameficandoEstudos.Infrastructure.Services;
+using GameficandoEstudos.Infrastructure.Data;
 using GameficandoEstudos.Infrastructure.Repositories;
 using GameficandoEstudos.Infrastructure.Security;
+using GameficandoEstudos.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +31,17 @@ foreach (var servico in servicosApp)
 {
     builder.Services.AddScoped(servico);
 }
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Cria a fonte de dados do Npgsql e injeta o suporte nativo a vetores
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.UseVector();
+var dataSource = dataSourceBuilder.Build();
+
+// Repassa a fonte de dados pronta para o Entity Framework
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(dataSource, o => o.UseVector()));
 
 builder.Services.AddAuthentication(options =>
 {

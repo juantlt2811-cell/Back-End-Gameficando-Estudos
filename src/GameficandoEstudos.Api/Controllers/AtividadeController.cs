@@ -61,7 +61,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
         }
 
-        [HttpPut]
+        [HttpPut("atualizar")]
         [Authorize(Roles = "Professor")]
         public async Task<IActionResult> Atualizar([FromBody] AtualizarAtividadeDto dto)
         {

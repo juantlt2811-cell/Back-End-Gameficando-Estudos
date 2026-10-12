@@ -13,22 +13,23 @@ namespace GameficandoEstudos.Domain.Entities
         public TipoUsuario Tipo { get; private set; }
         public PerfilGamificacao? Gamificacao { get; private set; }
 
-        public Usuario(string nome, string email, string senha, TipoUsuario tipoUsuario)
+        private Usuario() { }
+        public Usuario(string nome, string email, string senha, TipoUsuario tipo)
         {
             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));
             ArgumentException.ThrowIfNullOrEmpty(email, nameof(email));
             ArgumentException.ThrowIfNullOrEmpty(senha, nameof(senha));
 
-            if (!Enum.IsDefined(typeof(TipoUsuario), tipoUsuario))
-                throw new ArgumentException("Tipo de usuário inválido.", nameof(tipoUsuario));
+            if (!Enum.IsDefined(typeof(TipoUsuario), tipo))
+                throw new ArgumentException("Tipo de usuário inválido.", nameof(tipo));
 
 
             Nome = nome;
             Email = email;
             Senha = senha;
-            Tipo = tipoUsuario;
+            Tipo = tipo;
 
-            if (tipoUsuario == TipoUsuario.Aluno)
+            if (tipo == TipoUsuario.Aluno)
             {
                 Gamificacao = new PerfilGamificacao();
             }

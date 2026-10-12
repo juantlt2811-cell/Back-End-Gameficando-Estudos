@@ -18,6 +18,7 @@ namespace GameficandoEstudos.Domain.Entities
 
         public Materia Materia { get; private set; }
 
+        private Atividade() { }
         public Atividade(string nome, TipoAtividade tipo, string conteudo, string gabarito, int idMateria)
         {
             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));

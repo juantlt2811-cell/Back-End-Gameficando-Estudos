@@ -41,7 +41,7 @@ namespace GameficandoEstudos.Api.Controllers
             _pesquisarMateriaService = pesquisarMateriaService;
         }
 
-        [HttpPost]
+        [HttpPost("criar")]
         public async Task<IActionResult> Criar([FromBody] CriarMateriaDto dto)
         {
             try
@@ -57,7 +57,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
         }
 
-        [HttpPut]
+        [HttpPut("atualizar")]
         public async Task<IActionResult> Atualizar([FromBody] AtualizarMateriaDto dto)
         {
             try

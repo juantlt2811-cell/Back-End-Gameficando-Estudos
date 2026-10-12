@@ -12,6 +12,7 @@
         public string Origem { get; private set; }
         public CaixaFontes CaixaFonte { get; private set; }
 
+        private FonteChunks() { }
         public FonteChunks(string conteudo, int idCaixaFonte, float[] embeddings, string origem, Guid documentoId)
         {
             ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
