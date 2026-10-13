@@ -1,6 +1,7 @@
 ﻿using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ namespace GameficandoEstudos.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController : ApiControllerBase
     {
         private readonly CadastrarUsuarioService _cadastrarService;
         private readonly AutenticarUsuarioService _autenticarService;
@@ -20,6 +21,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("cadastrar")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Cadastrar([FromBody] RegistrarUsuarioDto dto)
         {
             try
@@ -34,6 +36,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             try

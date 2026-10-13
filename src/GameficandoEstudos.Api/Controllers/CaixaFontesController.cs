@@ -11,7 +11,7 @@ namespace GameficandoEstudos.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = "Professor")] 
-    public class CaixaFontesController : ControllerBase
+    public class CaixaFontesController : ApiControllerBase
     {
         private readonly ProcessarMaterialEstudoService _processarMaterialService;
         private readonly RemoverMaterialEstudoService _removerMaterialService;
@@ -40,7 +40,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {
@@ -61,7 +61,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {
@@ -83,7 +83,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {

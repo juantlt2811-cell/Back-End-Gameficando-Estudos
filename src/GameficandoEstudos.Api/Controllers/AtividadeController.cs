@@ -12,7 +12,7 @@ namespace GameficandoEstudos.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class AtividadeController : ControllerBase
+    public class AtividadeController : ApiControllerBase
     {
         private readonly GeradorAtividadeService _geradorAtividadeService;
         private readonly AtualizarAtividadeService _atualizarAtividadeService;
@@ -73,7 +73,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {
@@ -93,7 +93,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {
@@ -129,7 +129,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {

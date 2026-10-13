@@ -1,4 +1,17 @@
-﻿namespace GameficandoEstudos.Application.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace GameficandoEstudos.Application.DTOs
 {
-    public record AtualizarAtividadeDto(int Id, string Nome, string Conteudo, string Gabarito);
+    public record AtualizarAtividadeDto(
+        [param: Range(1, int.MaxValue, ErrorMessage = "Id da atividade inválido.")]
+        int Id,
+
+        [param: Required(ErrorMessage = "O nome da atividade é obrigatório.")]
+        string Nome,
+
+        [param: Required(ErrorMessage = "O conteúdo da atividade é obrigatório.")]
+        string Conteudo,
+
+        [param: Required(ErrorMessage = "O gabarito da atividade é obrigatório.")]
+        string Gabarito);
 }

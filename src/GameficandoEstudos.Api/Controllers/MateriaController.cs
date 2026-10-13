@@ -12,7 +12,7 @@ namespace GameficandoEstudos.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize] 
-    public class MateriaController : ControllerBase
+    public class MateriaController : ApiControllerBase
     {
         private readonly CriarMateriaService _criarMateriaService;
         private readonly AtualizarMateriaService _atualizarMateriaService;
@@ -69,7 +69,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message); 
+                return Proibido(ex.Message); 
             }
             catch (Exception ex)
             {
@@ -89,7 +89,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {
@@ -108,7 +108,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Forbid(ex.Message);
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {

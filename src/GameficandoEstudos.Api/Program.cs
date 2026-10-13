@@ -1,4 +1,5 @@
 using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.Interfaces.Security;
 using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using GameficandoEstudos.Application.Validacoes;
@@ -13,6 +14,7 @@ using Npgsql;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,10 +30,26 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<PoliticaSenhaValidator>();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
 var applicationAssembly = typeof(CriarMateriaService).Assembly;
 
 var servicosApp = applicationAssembly.GetTypes()
@@ -88,6 +106,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
+app.UseRateLimiter();
 app.UseAuthentication(); 
 app.UseAuthorization();
 

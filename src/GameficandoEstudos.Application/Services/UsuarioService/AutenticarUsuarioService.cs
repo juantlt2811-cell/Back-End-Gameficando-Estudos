@@ -1,36 +1,48 @@
-﻿using System;
-using System.Threading.Tasks;
-using GameficandoEstudos.Application.DTOs;
+﻿using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.Interfaces.Security;
 
-namespace GameficandoEstudos.Application.Services.UsuarioService
+public class AutenticarUsuarioService
 {
-    public class AutenticarUsuarioService
+    private readonly IUsuarioRepository _usuarioRepository;
+    private readonly IPasswordService _passwordService;
+    private readonly ITokenService _tokenService;
+    private readonly ILoginAttemptGuard _loginAttemptGuard;
+
+    public AutenticarUsuarioService(
+        IUsuarioRepository usuarioRepository,
+        IPasswordService passwordService,
+        ITokenService tokenService,
+        ILoginAttemptGuard loginAttemptGuard)
     {
-        private readonly IUsuarioRepository _usuarioRepository;
-        private readonly IPasswordService _passwordService;
-        private readonly ITokenService _tokenService;
+        _usuarioRepository = usuarioRepository;
+        _passwordService = passwordService;
+        _tokenService = tokenService;
+        _loginAttemptGuard = loginAttemptGuard;
+    }
 
-        public AutenticarUsuarioService(IUsuarioRepository usuarioRepository, IPasswordService passwordService, ITokenService tokenService)
+    public async Task<AuthResultDto> ExecutarAsync(LoginDto dto)
+    {
+        if (_loginAttemptGuard.EstaBloqueado(dto.Email))
+            throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
+
+        var usuario = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
+        if (usuario == null)
         {
-            _usuarioRepository = usuarioRepository;
-            _passwordService = passwordService;
-            _tokenService = tokenService;
+            _loginAttemptGuard.RegistrarFalha(dto.Email);
+            throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
         }
 
-        public async Task<AuthResultDto> ExecutarAsync(LoginDto dto)
+        bool senhaValida = _passwordService.VerifyPassword(usuario.Senha, dto.Senha);
+        if (!senhaValida)
         {
-            var usuario = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
-            if (usuario == null)
-                throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
-
-            bool senhaValida = _passwordService.VerifyPassword(usuario.Senha, dto.Senha);
-            if (!senhaValida)
-                throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
-
-            string token = _tokenService.GerarToken(usuario);
-
-            return new AuthResultDto(usuario.Id, usuario.Nome, token, usuario.Tipo);
+            _loginAttemptGuard.RegistrarFalha(dto.Email);
+            throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
         }
+
+        _loginAttemptGuard.RegistrarSucesso(dto.Email);
+
+        string token = _tokenService.GerarToken(usuario);
+        return new AuthResultDto(usuario.Id, usuario.Nome, token, usuario.Tipo);
     }
 }
