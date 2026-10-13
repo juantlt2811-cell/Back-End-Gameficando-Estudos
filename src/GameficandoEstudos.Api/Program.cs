@@ -7,6 +7,7 @@ using GameficandoEstudos.Infrastructure.Data;
 using GameficandoEstudos.Infrastructure.Repositories;
 using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
+using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -95,6 +96,10 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IAtividadeRepository, AtividadeRepository>();
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddScoped<IEmailService, FakeEmailService>();
+else
+    builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddHttpClient<ILlmService, LlmService>();
 var app = builder.Build();
 

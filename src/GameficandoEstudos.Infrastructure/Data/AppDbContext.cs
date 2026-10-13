@@ -27,6 +27,7 @@ namespace GameficandoEstudos.Infrastructure.Data
                 b.Property(u => u.Email).IsRequired().HasMaxLength(150);
                 b.Property(u => u.Nome).IsRequired().HasMaxLength(100);
                 b.Property(u => u.Senha).IsRequired();
+                b.Property(u => u.TokenRedefinicaoSenhaHash).HasMaxLength(100);
 
                 b.OwnsOne(u => u.Gamificacao, g =>
                 {

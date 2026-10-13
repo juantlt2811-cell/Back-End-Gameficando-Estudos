@@ -207,6 +207,13 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.Property<int>("Tipo")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("TokenRedefinicaoSenhaExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenRedefinicaoSenhaHash")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
