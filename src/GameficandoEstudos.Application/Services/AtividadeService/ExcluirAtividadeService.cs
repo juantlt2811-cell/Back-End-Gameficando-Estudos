@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Threading.Tasks;
 using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.DTOs;
+
 
 namespace GameficandoEstudos.Application.Services.AtividadeService
 {

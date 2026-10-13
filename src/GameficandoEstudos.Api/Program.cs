@@ -1,13 +1,11 @@
 using GameficandoEstudos.Application.Interfaces;
-using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
+using GameficandoEstudos.Application.Validacoes;
 using GameficandoEstudos.Infrastructure.Data;
 using GameficandoEstudos.Infrastructure.Repositories;
-using GameficandoEstudos.Infrastructure.Repositories.FakeRepositories;
 using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
-using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -21,9 +19,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendDev", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<PoliticaSenhaValidator>();
 var applicationAssembly = typeof(CriarMateriaService).Assembly;
 
 var servicosApp = applicationAssembly.GetTypes()
@@ -36,7 +44,6 @@ foreach (var servico in servicosApp)
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Cria a fonte de dados do Npgsql e injeta o suporte nativo a vetores
 var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
 dataSourceBuilder.UseVector();
 var dataSource = dataSourceBuilder.Build();
@@ -62,7 +69,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Emissor"],
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:ChaveSecreta"] ?? "ChavePadraoSuperSecreta123!"))
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:ChaveSecreta"]))
     };
 });
 builder.Services.AddScoped<ICaixaFontesRepository, CaixaFontesRepository>();
@@ -80,7 +87,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("FrontendDev");
 app.UseAuthentication(); 
 app.UseAuthorization();
 

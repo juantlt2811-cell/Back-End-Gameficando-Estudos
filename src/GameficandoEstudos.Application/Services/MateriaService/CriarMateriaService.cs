@@ -1,6 +1,6 @@
-﻿using GameficandoEstudos.Application.DTOs;
-using GameficandoEstudos.Application.Interfaces;
+﻿using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
+using GameficandoEstudos.Application.DTOs;
 
 namespace GameficandoEstudos.Application.Services.MateriaService
 {

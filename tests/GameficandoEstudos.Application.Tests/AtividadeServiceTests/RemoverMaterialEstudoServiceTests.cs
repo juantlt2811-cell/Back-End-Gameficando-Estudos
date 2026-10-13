@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿
+using FluentAssertions;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.AtividadeService;
 using GameficandoEstudos.Domain.Entities;
@@ -12,100 +13,190 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
     public class RemoverMaterialEstudoServiceTests
     {
         [Fact]
-        public async Task ExecutarAsync_QuandoTudoEstiverCorreto_DeveChamarRemoverChunksDoRepositorio()
+        public async Task ExecutarAsync_QuandoTudoEstiverCorreto_DeveRemoverChunksPorDocumentoId()
         {
+            // Arrange
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
 
             int idMateria = 1;
             int idProfessorLogado = 1;
-            string tituloMaterial = "Apostila_Csharp.pdf";
+            Guid documentoId = Guid.NewGuid();
 
-            var materia = new Materia("Programação", 60, "Média", idProfessorLogado);
-            typeof(Materia).GetProperty("Id")?.SetValue(materia, idMateria);
+            var materia = new Materia(
+                "Programação",
+                60,
+                "Média",
+                idProfessorLogado);
+
+            typeof(Materia)
+                .GetProperty("Id")!
+                .SetValue(materia, idMateria);
 
             var caixa = new CaixaFontes("Base", idMateria);
-            typeof(CaixaFontes).GetProperty("Id")?.SetValue(caixa, 10);
 
-            materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
-            caixaRepoMock.Setup(repo => repo.ObterPorMateriaAsync(idMateria)).ReturnsAsync(caixa);
+            materiaRepoMock
+                .Setup(repo => repo.ObterPorIdAsync(idMateria))
+                .ReturnsAsync(materia);
 
-            var service = new RemoverMaterialEstudoService(materiaRepoMock.Object, caixaRepoMock.Object);
+            caixaRepoMock
+                .Setup(repo => repo.ObterPorMateriaAsync(idMateria))
+                .ReturnsAsync(caixa);
 
-            await service.ExecutarAsync(idMateria, tituloMaterial, idProfessorLogado);
+            caixaRepoMock
+                .Setup(repo => repo.RemoverChunksPorDocumentoIdAsync(documentoId))
+                .Returns(Task.CompletedTask);
 
-            caixaRepoMock.Verify(repo => repo.RemoverChunksPorTituloAsync(caixa.Id, tituloMaterial), Times.Once);
+            var service = new RemoverMaterialEstudoService(
+                materiaRepoMock.Object,
+                caixaRepoMock.Object);
+
+            // Act
+            await service.ExecutarAsync(
+                idMateria,
+                documentoId,
+                idProfessorLogado);
+
+            // Assert
+            caixaRepoMock.Verify(
+                repo => repo.RemoverChunksPorDocumentoIdAsync(documentoId),
+                Times.Once);
         }
 
         [Fact]
         public async Task ExecutarAsync_QuandoMateriaNaoExistir_DeveLancarExcecao()
         {
+            // Arrange
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
 
             int idMateria = 99;
             int idProfessorLogado = 1;
-            string tituloMaterial = "Apostila.pdf";
+            Guid documentoId = Guid.NewGuid();
 
-            materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync((Materia?)null);
+            materiaRepoMock
+                .Setup(repo => repo.ObterPorIdAsync(idMateria))
+                .ReturnsAsync((Materia?)null);
 
-            var service = new RemoverMaterialEstudoService(materiaRepoMock.Object, caixaRepoMock.Object);
+            var service = new RemoverMaterialEstudoService(
+                materiaRepoMock.Object,
+                caixaRepoMock.Object);
 
-            Func<Task> act = async () => await service.ExecutarAsync(idMateria, tituloMaterial, idProfessorLogado);
+            // Act
+            Func<Task> act = () => service.ExecutarAsync(
+                idMateria,
+                documentoId,
+                idProfessorLogado);
 
-            await act.Should().ThrowAsync<InvalidOperationException>()
+            // Assert
+            await act.Should()
+                .ThrowAsync<InvalidOperationException>()
                 .WithMessage("Matéria não encontrada.");
+
+            caixaRepoMock.Verify(
+                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+                Times.Never);
         }
 
         [Fact]
         public async Task ExecutarAsync_QuandoProfessorNaoForDono_DeveLancarExcecaoNaoAutorizado()
         {
+            // Arrange
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
 
             int idMateria = 1;
-            int idProfessorHacker = 999;
             int idProfessorDono = 1;
-            string tituloMaterial = "Apostila.pdf";
+            int idProfessorNaoAutorizado = 999;
+            Guid documentoId = Guid.NewGuid();
 
-            var materia = new Materia("Programação", 60, "Média", idProfessorDono);
-            typeof(Materia).GetProperty("Id")?.SetValue(materia, idMateria);
+            var materia = new Materia(
+                "Programação",
+                60,
+                "Média",
+                idProfessorDono);
 
-            materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
+            typeof(Materia)
+                .GetProperty("Id")!
+                .SetValue(materia, idMateria);
 
-            var service = new RemoverMaterialEstudoService(materiaRepoMock.Object, caixaRepoMock.Object);
+            materiaRepoMock
+                .Setup(repo => repo.ObterPorIdAsync(idMateria))
+                .ReturnsAsync(materia);
 
-            Func<Task> act = async () => await service.ExecutarAsync(idMateria, tituloMaterial, idProfessorHacker);
+            var service = new RemoverMaterialEstudoService(
+                materiaRepoMock.Object,
+                caixaRepoMock.Object);
 
-            await act.Should().ThrowAsync<UnauthorizedAccessException>()
-                .WithMessage("Você não tem permissão para remover materiais desta matéria.");
+            // Act
+            Func<Task> act = () => service.ExecutarAsync(
+                idMateria,
+                documentoId,
+                idProfessorNaoAutorizado);
 
-            caixaRepoMock.Verify(repo => repo.RemoverChunksPorTituloAsync(It.IsAny<int>(), It.IsAny<string>()), Times.Never);
+            // Assert
+            await act.Should()
+                .ThrowAsync<UnauthorizedAccessException>()
+                .WithMessage(
+                    "Você não tem permissão para remover materiais desta matéria.");
+
+            caixaRepoMock.Verify(
+                repo => repo.ObterPorMateriaAsync(It.IsAny<int>()),
+                Times.Never);
+
+            caixaRepoMock.Verify(
+                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+                Times.Never);
         }
 
         [Fact]
         public async Task ExecutarAsync_QuandoMateriaNaoTiverCaixa_DeveLancarExcecao()
         {
+            // Arrange
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
 
             int idMateria = 1;
             int idProfessorLogado = 1;
-            string tituloMaterial = "Apostila.pdf";
+            Guid documentoId = Guid.NewGuid();
 
-            var materia = new Materia("Programação", 60, "Média", idProfessorLogado);
-            typeof(Materia).GetProperty("Id")?.SetValue(materia, idMateria);
+            var materia = new Materia(
+                "Programação",
+                60,
+                "Média",
+                idProfessorLogado);
 
-            materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
+            typeof(Materia)
+                .GetProperty("Id")!
+                .SetValue(materia, idMateria);
 
-            caixaRepoMock.Setup(repo => repo.ObterPorMateriaAsync(idMateria)).ReturnsAsync((CaixaFontes?)null);
+            materiaRepoMock
+                .Setup(repo => repo.ObterPorIdAsync(idMateria))
+                .ReturnsAsync(materia);
 
-            var service = new RemoverMaterialEstudoService(materiaRepoMock.Object, caixaRepoMock.Object);
+            caixaRepoMock
+                .Setup(repo => repo.ObterPorMateriaAsync(idMateria))
+                .ReturnsAsync((CaixaFontes)null!);
 
-            Func<Task> act = async () => await service.ExecutarAsync(idMateria, tituloMaterial, idProfessorLogado);
+            var service = new RemoverMaterialEstudoService(
+                materiaRepoMock.Object,
+                caixaRepoMock.Object);
 
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage("Esta matéria ainda não possui uma base de conhecimento.");
+            // Act
+            Func<Task> act = () => service.ExecutarAsync(
+                idMateria,
+                documentoId,
+                idProfessorLogado);
+
+            // Assert
+            await act.Should()
+                .ThrowAsync<InvalidOperationException>()
+                .WithMessage(
+                    "Esta matéria ainda não possui uma base de conhecimento.");
+
+            caixaRepoMock.Verify(
+                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+                Times.Never);
         }
     }
 }

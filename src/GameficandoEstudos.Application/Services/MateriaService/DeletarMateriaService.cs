@@ -1,4 +1,5 @@
 ﻿using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.DTOs;
 
 namespace GameficandoEstudos.Application.Services.MateriaService
 {

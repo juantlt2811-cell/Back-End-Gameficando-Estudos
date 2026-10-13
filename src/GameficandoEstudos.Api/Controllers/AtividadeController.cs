@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Services.AtividadeService;
 using GameficandoEstudos.Domain.Enums;
+using GameficandoEstudos.Application.DTOs;
 
 namespace GameficandoEstudos.Api.Controllers
 {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
-using GameficandoEstudos.Domain.Enums; 
+using GameficandoEstudos.Domain.Enums;
 
 namespace GameficandoEstudos.Application.Services.AtividadeService
 {

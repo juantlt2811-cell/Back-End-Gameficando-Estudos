@@ -1,12 +1,11 @@
-﻿using GameficandoEstudos.Application.DTOs;
-using GameficandoEstudos.Application.Services;
+﻿using GameficandoEstudos.Application.Services;
 using GameficandoEstudos.Application.Services.MateriaService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using GameficandoEstudos.Application.DTOs;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GameficandoEstudos.Application.Services.MateriaService; 
 
 namespace GameficandoEstudos.Api.Controllers
 {
@@ -42,6 +41,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("criar")]
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> Criar([FromBody] CriarMateriaDto dto)
         {
             try
@@ -58,6 +58,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPut("atualizar")]
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> Atualizar([FromBody] AtualizarMateriaDto dto)
         {
             try
@@ -77,6 +78,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> Deletar(int id)
         {
             try
@@ -115,6 +117,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpGet("minhas")]
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> ListarMinhas()
         {
             int idProfessor = ObterUsuarioIdAutenticado();

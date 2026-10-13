@@ -30,7 +30,7 @@ namespace GameficandoEstudos.Application.Services.UsuarioService
 
             string token = _tokenService.GerarToken(usuario);
 
-            return new AuthResultDto(usuario.Id, usuario.Nome, token);
+            return new AuthResultDto(usuario.Id, usuario.Nome, token, usuario.Tipo);
         }
     }
 }

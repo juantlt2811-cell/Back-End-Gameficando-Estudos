@@ -2,6 +2,7 @@
 using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.UsuarioService;
+using GameficandoEstudos.Application.Validacoes;
 using GameficandoEstudos.Domain.Entities;
 using GameficandoEstudos.Domain.Enums;
 using Moq;
@@ -18,21 +19,36 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
         {
             var usuarioRepoMock = new Mock<IUsuarioRepository>();
             var passwordServiceMock = new Mock<IPasswordService>();
+            var politicaSenhaValidator = new PoliticaSenhaValidator();
 
-            var dto = new RegistrarUsuarioDto("Professor Teste", "professor@email.com", "Senha@123", TipoUsuario.Professor);
+            var dto = new RegistrarUsuarioDto(
+                "Professor Teste",
+                "professor@email.com",
+                "SenhaAbc123",
+                TipoUsuario.Professor);
 
-            usuarioRepoMock.Setup(repo => repo.ExisteEmailAsync(dto.Email))
-                           .ReturnsAsync(true);
+            usuarioRepoMock
+                .Setup(repo => repo.ExisteEmailAsync(dto.Email))
+                .ReturnsAsync(true);
 
-            var service = new CadastrarUsuarioService(usuarioRepoMock.Object, passwordServiceMock.Object);
+            var service = new CadastrarUsuarioService(
+                usuarioRepoMock.Object,
+                passwordServiceMock.Object,
+                politicaSenhaValidator);
 
             Func<Task> act = async () => await service.ExecutarAsync(dto);
 
-            await act.Should().ThrowAsync<InvalidOperationException>()
+            await act.Should()
+                .ThrowAsync<InvalidOperationException>()
                 .WithMessage("Este e-mail já está em uso.");
 
-            usuarioRepoMock.Verify(repo => repo.AdicionarAsync(It.IsAny<Usuario>()), Times.Never);
-            passwordServiceMock.Verify(p => p.HashPassword(It.IsAny<string>()), Times.Never);
+            usuarioRepoMock.Verify(
+                repo => repo.AdicionarAsync(It.IsAny<Usuario>()),
+                Times.Never);
+
+            passwordServiceMock.Verify(
+                p => p.HashPassword(It.IsAny<string>()),
+                Times.Never);
         }
 
         [Fact]
@@ -40,23 +56,79 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
         {
             var usuarioRepoMock = new Mock<IUsuarioRepository>();
             var passwordServiceMock = new Mock<IPasswordService>();
+            var politicaSenhaValidator = new PoliticaSenhaValidator();
 
-            var dto = new RegistrarUsuarioDto("Novo Aluno", "aluno@email.com", "Senha123", TipoUsuario.Aluno);
+            var dto = new RegistrarUsuarioDto(
+                "Novo Aluno",
+                "aluno@email.com",
+                "SenhaAbc123",
+                TipoUsuario.Aluno);
 
-            usuarioRepoMock.Setup(repo => repo.ExisteEmailAsync(dto.Email)).ReturnsAsync(false);
-            passwordServiceMock.Setup(p => p.HashPassword(dto.Senha)).Returns("$argon2id$v=19$hash_fake");
+            usuarioRepoMock
+                .Setup(repo => repo.ExisteEmailAsync(dto.Email))
+                .ReturnsAsync(false);
 
-            var service = new CadastrarUsuarioService(usuarioRepoMock.Object, passwordServiceMock.Object);
+            passwordServiceMock
+                .Setup(p => p.HashPassword(dto.Senha))
+                .Returns("$argon2id$v=19$hash_fake");
 
-            var idGerado = await service.ExecutarAsync(dto);
+            var service = new CadastrarUsuarioService(
+                usuarioRepoMock.Object,
+                passwordServiceMock.Object,
+                politicaSenhaValidator);
 
-            passwordServiceMock.Verify(p => p.HashPassword(dto.Senha), Times.Once);
+            await service.ExecutarAsync(dto);
+
+            passwordServiceMock.Verify(
+                p => p.HashPassword(dto.Senha),
+                Times.Once);
+
             usuarioRepoMock.Verify(repo => repo.AdicionarAsync(It.Is<Usuario>(u =>
                 u.Nome == dto.Nome &&
                 u.Email == dto.Email &&
                 u.Senha == "$argon2id$v=19$hash_fake" &&
                 u.Tipo == TipoUsuario.Aluno
             )), Times.Once);
+        }
+
+        [Theory]
+        [InlineData("senhaabc123")]
+        [InlineData("SENHAABC123")]
+        [InlineData("SenhaAbcdef")]
+        [InlineData("Ab1")]
+        public async Task ExecutarAsync_QuandoSenhaInvalida_DeveLancarExcecao(string senha)
+        {
+            var usuarioRepoMock = new Mock<IUsuarioRepository>();
+            var passwordServiceMock = new Mock<IPasswordService>();
+            var politicaSenhaValidator = new PoliticaSenhaValidator();
+
+            var dto = new RegistrarUsuarioDto(
+                "Novo Aluno",
+                "aluno@email.com",
+                senha,
+                TipoUsuario.Aluno);
+
+            usuarioRepoMock
+                .Setup(repo => repo.ExisteEmailAsync(dto.Email))
+                .ReturnsAsync(false);
+
+            var service = new CadastrarUsuarioService(
+                usuarioRepoMock.Object,
+                passwordServiceMock.Object,
+                politicaSenhaValidator);
+
+            Func<Task> act = async () => await service.ExecutarAsync(dto);
+
+            await act.Should()
+                .ThrowAsync<InvalidOperationException>();
+
+            passwordServiceMock.Verify(
+                p => p.HashPassword(It.IsAny<string>()),
+                Times.Never);
+
+            usuarioRepoMock.Verify(
+                repo => repo.AdicionarAsync(It.IsAny<Usuario>()),
+                Times.Never);
         }
     }
 }
