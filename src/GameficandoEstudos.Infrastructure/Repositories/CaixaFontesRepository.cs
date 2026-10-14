@@ -43,10 +43,10 @@ public class CaixaFontesRepository : ICaixaFontesRepository
         return caixaFontes;
     }
 
-    public async Task RemoverChunksPorDocumentoIdAsync(Guid documentoId)
+    public async Task RemoverChunksPorDocumentoIdAsync(int idMateria, Guid documentoId)
     {
         await _context.FonteChunks
-            .Where(fc => fc.DocumentoId == documentoId)
+            .Where(fc => fc.DocumentoId == documentoId && fc.CaixaFonte.IdMateria == idMateria)
             .ExecuteDeleteAsync();
     }
 

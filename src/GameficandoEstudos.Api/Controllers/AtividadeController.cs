@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using GameficandoEstudos.Application.DTOs;
+using GameficandoEstudos.Application.Services.AtividadeService;
+using GameficandoEstudos.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GameficandoEstudos.Application.Services.AtividadeService;
-using GameficandoEstudos.Domain.Enums;
-using GameficandoEstudos.Application.DTOs;
 
 namespace GameficandoEstudos.Api.Controllers
 {
@@ -43,6 +44,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("gerar")]
+        [EnableRateLimiting("ia")]
         [Authorize(Roles = "Professor")] 
         public async Task<IActionResult> Gerar([FromBody] GerarAtividadeDto dto)
         {

@@ -12,7 +12,7 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<CaixaFontes?> ObterPorIdAsync(int id);
         Task<CaixaFontes> ObterPorMateriaAsync(int idMateria);
         Task<CaixaFontes> AtualizarAsync(CaixaFontes caixaFontes);
-        Task RemoverChunksPorDocumentoIdAsync(Guid documentoId);
+        Task RemoverChunksPorDocumentoIdAsync(int idMateria, Guid documentoId);
         Task<IEnumerable<ResumoOrigem>> PesquisarResumoMateriaisAsync(int idMateria, string? termoBusca);
     }
 }

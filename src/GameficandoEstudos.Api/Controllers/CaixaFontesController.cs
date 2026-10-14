@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using GameficandoEstudos.Application.DTOs;
+using GameficandoEstudos.Application.Services.AtividadeService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GameficandoEstudos.Application.DTOs;
-using GameficandoEstudos.Application.Services.AtividadeService;
 
 namespace GameficandoEstudos.Api.Controllers
 {
@@ -28,6 +29,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("processar-texto")]
+        [EnableRateLimiting("ia")]
         public async Task<IActionResult> ProcessarTexto([FromBody] AdicionarMaterialDto dto)
         {
             try

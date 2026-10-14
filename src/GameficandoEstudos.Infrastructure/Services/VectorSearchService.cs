@@ -1,7 +1,8 @@
 ﻿using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Pgvector.EntityFrameworkCore; 
+using Pgvector;
+using Pgvector.EntityFrameworkCore;
 
 namespace GameficandoEstudos.Infrastructure.Services;
 
@@ -18,7 +19,7 @@ public class VectorSearchService : IVectorSearchService
 
     public async Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado)
     {
-        var vetorBusca = await _llmService.GerarEmbeddingsAsync(temaDesejado);
+        var vetorBusca = new Vector(await _llmService.GerarEmbeddingsAsync(temaDesejado));
 
         var chunksRelevantes = await _context.FonteChunks
             .Where(fc => fc.CaixaFonte.IdMateria == idMateria)

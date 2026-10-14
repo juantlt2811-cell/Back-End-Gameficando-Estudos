@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using GameficandoEstudos.Application.DTOs;
+using GameficandoEstudos.Application.Services.SessaoPraticaService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using GameficandoEstudos.Application.DTOs;
-using GameficandoEstudos.Application.Services.SessaoPraticaService;
 
 namespace GameficandoEstudos.Api.Controllers
 {
@@ -40,6 +41,7 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
         [HttpPost("{idSessao}/responder/{idAtividade}")]
+        [EnableRateLimiting("ia")]
         public async Task<IActionResult> Responder(int idSessao, int idAtividade, [FromBody] EnviarRespostaDto dto)
         {
             try

@@ -51,15 +51,18 @@ public class LlmService : ILlmService
     {
         var requestBody = new
         {
-            model = "models/text-embedding-004",
+            model = "models/gemini-embedding-001",
             content = new
             {
                 parts = new[] { new { text = texto } }
+            },
+            embedContentConfig = new
+            {
+                outputDimensionality = 768 // mantem compatibilidade com a coluna vector(768) ja existente
             }
         };
 
-        // O Gemini recebe a chave diretamente via Query String na URL
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={_embeddingsApiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={_embeddingsApiKey}";
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
@@ -70,7 +73,6 @@ public class LlmService : ILlmService
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
 
-        // O Gemini devolve o array de floats dentro de embedding -> values
         return jsonDocument.RootElement
             .GetProperty("embedding")
             .GetProperty("values")

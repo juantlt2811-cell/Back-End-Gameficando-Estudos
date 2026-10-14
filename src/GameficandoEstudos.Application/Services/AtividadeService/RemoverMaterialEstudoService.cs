@@ -28,7 +28,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             if (caixa == null)
                 throw new InvalidOperationException("Esta matéria ainda não possui uma base de conhecimento.");
 
-            await _caixaFontesRepository.RemoverChunksPorDocumentoIdAsync(documentoId);
+            
+            await _caixaFontesRepository.RemoverChunksPorDocumentoIdAsync(idMateria, documentoId);
         }
     }
 }
