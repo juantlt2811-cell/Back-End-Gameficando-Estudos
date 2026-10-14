@@ -176,6 +176,87 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.ToTable("Materias");
                 });
 
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.SessaoPratica", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ConcluidaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdMateria")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("IniciadaEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalAcertos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalQuestoes")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdMateria");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("SessoesPratica");
+                });
+
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.TentativaResposta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Acertou")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Feedback")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("IdAtividade")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdMateria")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdSessaoPratica")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RespondidoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RespostaAluno")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdAtividade");
+
+                    b.HasIndex("IdSessaoPratica");
+
+                    b.ToTable("TentativasResposta");
+                });
+
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -227,7 +308,7 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.HasOne("GameficandoEstudos.Domain.Entities.Materia", "Materia")
                         .WithMany()
                         .HasForeignKey("IdMateria")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Materia");
@@ -264,6 +345,42 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Professor");
+                });
+
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.SessaoPratica", b =>
+                {
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Materia", "Materia")
+                        .WithMany()
+                        .HasForeignKey("IdMateria")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Materia");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.TentativaResposta", b =>
+                {
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Atividade", "Atividade")
+                        .WithMany()
+                        .HasForeignKey("IdAtividade")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GameficandoEstudos.Domain.Entities.SessaoPratica", null)
+                        .WithMany("Tentativas")
+                        .HasForeignKey("IdSessaoPratica")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Atividade");
                 });
 
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.Usuario", b =>
@@ -303,6 +420,11 @@ namespace GameficandoEstudos.Infrastructure.Migrations
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.CaixaFontes", b =>
                 {
                     b.Navigation("Chunks");
+                });
+
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.SessaoPratica", b =>
+                {
+                    b.Navigation("Tentativas");
                 });
 #pragma warning restore 612, 618
         }

@@ -47,9 +47,18 @@ public class AtividadeRepository : IAtividadeRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task<List<Atividade>> ObterAleatoriasPorMateriaAsync(int idMateria, int quantidade)
+    {
+        var ativas = await _context.Atividades
+            .Where(a => a.IdMateria == idMateria && a.Ativa)
+            .ToListAsync();
+
+        // Embaralha em memoria (LINQ-to-Objects) — volume de questoes por materia e pequeno, nao justifica RANDOM() no banco.
+        return ativas.OrderBy(_ => Guid.NewGuid()).Take(quantidade).ToList();
+    }
+
     public async Task<bool> PossuiRespostasAsync(int idAtividade)
     {
-
-        return await Task.FromResult(false);
+        return await _context.TentativasResposta.AnyAsync(t => t.IdAtividade == idAtividade);
     }
 }

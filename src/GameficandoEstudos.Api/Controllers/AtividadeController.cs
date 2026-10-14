@@ -18,7 +18,6 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly AtualizarAtividadeService _atualizarAtividadeService;
         private readonly ExcluirAtividadeService _excluirAtividadeService;
         private readonly ListarAtividadesDaMateriaService _listarAtividadesService;
-        private readonly ResponderAtividadeService _responderAtividadeService;
         private readonly TestarAtividadeService _testarAtividadeService;
 
         public AtividadeController(
@@ -26,14 +25,12 @@ namespace GameficandoEstudos.Api.Controllers
             AtualizarAtividadeService atualizarAtividadeService,
             ExcluirAtividadeService excluirAtividadeService,
             ListarAtividadesDaMateriaService listarAtividadesService,
-            ResponderAtividadeService responderAtividadeService,
             TestarAtividadeService testarAtividadeService)
         {
             _geradorAtividadeService = geradorAtividadeService;
             _atualizarAtividadeService = atualizarAtividadeService;
             _excluirAtividadeService = excluirAtividadeService;
             _listarAtividadesService = listarAtividadesService;
-            _responderAtividadeService = responderAtividadeService;
             _testarAtividadeService = testarAtividadeService;
         }
 
@@ -101,21 +98,7 @@ namespace GameficandoEstudos.Api.Controllers
             }
         }
 
-        [HttpPost("{id}/responder")]
-        [Authorize(Roles = "Aluno")]
-        public async Task<IActionResult> Responder(int id, [FromBody] EnviarRespostaDto dto)
-        {
-            try
-            {
-                int idAluno = ObterUsuarioIdAutenticado();
-                var resultado = await _responderAtividadeService.ResponderAsync(idAluno, id, dto.Resposta);
-                return Ok(resultado);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { Erro = ex.Message });
-            }
-        }
+      
 
         [HttpPost("{id}/testar")]
         [Authorize(Roles = "Professor")]

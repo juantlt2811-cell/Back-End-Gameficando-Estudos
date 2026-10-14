@@ -96,6 +96,7 @@ builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IAtividadeRepository, AtividadeRepository>();
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
+builder.Services.AddScoped<ISessaoPraticaRepository, SessaoPraticaRepository>();
 if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<IEmailService, FakeEmailService>();
 else
