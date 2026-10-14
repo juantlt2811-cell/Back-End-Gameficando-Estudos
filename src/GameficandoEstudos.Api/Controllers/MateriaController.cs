@@ -1,9 +1,10 @@
-﻿using GameficandoEstudos.Application.Services;
+﻿using GameficandoEstudos.Application.DTOs;
+using GameficandoEstudos.Application.Services;
 using GameficandoEstudos.Application.Services.MateriaService;
+using GameficandoEstudos.Application.Services.RankingService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using GameficandoEstudos.Application.DTOs;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -21,6 +22,7 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly ListarMinhasMateriasService _listarMinhasMateriasService;
         private readonly ListarMateriasDisponiveisService _listarMateriasDisponiveisService;
         private readonly PesquisarMateriaService _pesquisarMateriaService;
+        private readonly ObterEstatisticasMateriaService _estatisticasMateriaService;
 
         public MateriaController(
             CriarMateriaService criarMateriaService,
@@ -29,7 +31,8 @@ namespace GameficandoEstudos.Api.Controllers
             BuscarMateriaPorIdService buscarMateriaPorIdService,
             ListarMinhasMateriasService listarMinhasMateriasService,
             ListarMateriasDisponiveisService listarMateriasDisponiveisService,
-            PesquisarMateriaService pesquisarMateriaService)
+            PesquisarMateriaService pesquisarMateriaService,
+            ObterEstatisticasMateriaService estatisticasMateriaService)
         {
             _criarMateriaService = criarMateriaService;
             _atualizarMateriaService = atualizarMateriaService;
@@ -38,6 +41,7 @@ namespace GameficandoEstudos.Api.Controllers
             _listarMinhasMateriasService = listarMinhasMateriasService;
             _listarMateriasDisponiveisService = listarMateriasDisponiveisService;
             _pesquisarMateriaService = pesquisarMateriaService;
+            _estatisticasMateriaService = estatisticasMateriaService;
         }
 
         [HttpPost("criar")]
@@ -138,8 +142,27 @@ namespace GameficandoEstudos.Api.Controllers
             var materias = await _pesquisarMateriaService.ExecutarAsync(termo, idProfessor);
             return Ok(materias);
         }
+        [HttpGet("{id}/estatisticas")]
+        [Authorize(Roles = "Professor")]
+        public async Task<IActionResult> Estatisticas(int id)
+        {
+            try
+            {
+                int idProfessor = ObterUsuarioIdAutenticado();
+                var estatisticas = await _estatisticasMateriaService.ExecutarAsync(id, idProfessor);
+                return Ok(estatisticas);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Proibido(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { Erro = ex.Message });
+            }
+        }
 
-       
+
 
         private int ObterUsuarioIdAutenticado()
         {
