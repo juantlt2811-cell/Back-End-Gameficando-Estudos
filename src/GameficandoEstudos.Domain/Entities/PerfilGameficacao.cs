@@ -10,6 +10,17 @@ namespace GameficandoEstudos.Domain.Entities
         public DateTime? UltimaAtividadeRealizadaEm { get; private set; }
 
         public const int LIMITE_DIARIO = 3;
+        public int TentativasRestantesHoje
+        {
+            get
+            {
+                var hoje = DateTime.UtcNow.Date;
+                if (UltimaAtividadeRealizadaEm?.Date == hoje)
+                    return Math.Max(0, LIMITE_DIARIO - AtividadesFeitasHoje);
+
+                return LIMITE_DIARIO;
+            }
+        }
 
         public PerfilGamificacao()
         {
@@ -59,5 +70,6 @@ namespace GameficandoEstudos.Domain.Entities
 
             UltimaAtividadeRealizadaEm = DateTime.UtcNow;
         }
+
     }
 }

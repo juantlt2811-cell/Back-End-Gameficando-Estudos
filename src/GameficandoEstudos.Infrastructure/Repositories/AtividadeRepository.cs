@@ -53,12 +53,15 @@ public class AtividadeRepository : IAtividadeRepository
             .Where(a => a.IdMateria == idMateria && a.Ativa)
             .ToListAsync();
 
-        // Embaralha em memoria (LINQ-to-Objects) — volume de questoes por materia e pequeno, nao justifica RANDOM() no banco.
         return ativas.OrderBy(_ => Guid.NewGuid()).Take(quantidade).ToList();
     }
 
     public async Task<bool> PossuiRespostasAsync(int idAtividade)
     {
         return await _context.TentativasResposta.AnyAsync(t => t.IdAtividade == idAtividade);
+    }
+    public async Task<int> ContarAtivasPorMateriaAsync(int idMateria)
+    {
+        return await _context.Atividades.CountAsync(a => a.IdMateria == idMateria && a.Ativa);
     }
 }

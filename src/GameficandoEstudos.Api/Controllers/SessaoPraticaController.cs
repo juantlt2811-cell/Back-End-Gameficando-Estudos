@@ -17,15 +17,19 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly IniciarSessaoPraticaService _iniciarService;
         private readonly ResponderSessaoPraticaService _responderService;
         private readonly ConcluirSessaoPraticaService _concluirService;
+        private readonly VerificarPodeIniciarSessaoService _verificarPodeIniciarService;
+
 
         public SessaoPraticaController(
             IniciarSessaoPraticaService iniciarService,
             ResponderSessaoPraticaService responderService,
-            ConcluirSessaoPraticaService concluirService)
+            ConcluirSessaoPraticaService concluirService,
+            VerificarPodeIniciarSessaoService verificarPodeIniciarService)
         {
             _iniciarService = iniciarService;
             _responderService = responderService;
             _concluirService = concluirService;
+            _verificarPodeIniciarService = verificarPodeIniciarService;
         }
 
         [HttpPost("iniciar/{idMateria}")]
@@ -64,7 +68,17 @@ namespace GameficandoEstudos.Api.Controllers
             catch (UnauthorizedAccessException ex) { return Proibido(ex.Message); }
             catch (InvalidOperationException ex) { return BadRequest(new { Erro = ex.Message }); }
         }
-
+        [HttpGet("confirmar-inicio/{idMateria}")]
+        public async Task<IActionResult> ConfirmarInicio(int idMateria)
+        {
+            try
+            {
+                var confirmacao = await _verificarPodeIniciarService.ExecutarAsync(ObterUsuarioIdAutenticado(), idMateria);
+                return Ok(confirmacao);
+            }
+            catch (UnauthorizedAccessException ex) { return Proibido(ex.Message); }
+            catch (InvalidOperationException ex) { return BadRequest(new { Erro = ex.Message }); }
+        }
         private int ObterUsuarioIdAutenticado()
         {
             var claim = User.FindFirst(ClaimTypes.NameIdentifier);
