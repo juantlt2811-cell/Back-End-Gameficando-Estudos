@@ -17,15 +17,18 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly ProcessarMaterialEstudoService _processarMaterialService;
         private readonly RemoverMaterialEstudoService _removerMaterialService;
         private readonly ListarMateriaisDaMateriaService _listarMateriaisService;
+        private readonly ProcessarArquivoEstudoService _processarArquivoService;
 
         public CaixaFontesController(
             ProcessarMaterialEstudoService processarMaterialService,
             RemoverMaterialEstudoService removerMaterialService,
-            ListarMateriaisDaMateriaService listarMateriaisService)
+            ListarMateriaisDaMateriaService listarMateriaisService,
+            ProcessarArquivoEstudoService processarArquivoService)
         {
             _processarMaterialService = processarMaterialService;
             _removerMaterialService = removerMaterialService;
             _listarMateriaisService = listarMateriaisService;
+            _processarArquivoService = processarArquivoService;
         }
 
         [HttpPost("processar-texto")]
@@ -82,6 +85,29 @@ namespace GameficandoEstudos.Api.Controllers
                 var materiais = await _listarMateriaisService.ExecutarAsync(request);
 
                 return Ok(materiais);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Proibido(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Erro = ex.Message });
+            }
+        }
+        [HttpPost("upload")]
+        [RequestSizeLimit(10 * 1024 * 1024)]
+        [EnableRateLimiting("ia")]
+        public async Task<IActionResult> Upload([FromForm] int idMateria, [FromForm] IFormFile arquivo)
+        {
+            try
+            {
+                int idProfessor = ObterUsuarioIdAutenticado();
+
+                await using var stream = arquivo.OpenReadStream();
+                await _processarArquivoService.ExecutarAsync(idMateria, arquivo.FileName, stream, arquivo.Length, idProfessor);
+
+                return Ok(new { Mensagem = "Arquivo processado e adicionado à base de conhecimento com sucesso." });
             }
             catch (UnauthorizedAccessException ex)
             {

@@ -15,7 +15,6 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
         [Fact]
         public async Task ExecutarAsync_QuandoTudoEstiverCorreto_DeveRemoverChunksPorDocumentoId()
         {
-            // Arrange
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
 
@@ -44,22 +43,20 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                 .ReturnsAsync(caixa);
 
             caixaRepoMock
-                .Setup(repo => repo.RemoverChunksPorDocumentoIdAsync(documentoId))
+                .Setup(repo => repo.RemoverChunksPorDocumentoIdAsync(idMateria, documentoId))
                 .Returns(Task.CompletedTask);
 
             var service = new RemoverMaterialEstudoService(
                 materiaRepoMock.Object,
                 caixaRepoMock.Object);
 
-            // Act
             await service.ExecutarAsync(
                 idMateria,
                 documentoId,
                 idProfessorLogado);
 
-            // Assert
             caixaRepoMock.Verify(
-                repo => repo.RemoverChunksPorDocumentoIdAsync(documentoId),
+                repo => repo.RemoverChunksPorDocumentoIdAsync(idMateria, documentoId),
                 Times.Once);
         }
 
@@ -94,7 +91,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                 .WithMessage("Matéria não encontrada.");
 
             caixaRepoMock.Verify(
-                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+                repo => repo.RemoverChunksPorDocumentoIdAsync(idMateria ,It.IsAny<Guid>()),
                 Times.Never);
         }
 
@@ -145,7 +142,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                 Times.Never);
 
             caixaRepoMock.Verify(
-                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+                repo => repo.RemoverChunksPorDocumentoIdAsync(idMateria, It.IsAny<Guid>()),
                 Times.Never);
         }
 
@@ -195,7 +192,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                     "Esta matéria ainda não possui uma base de conhecimento.");
 
             caixaRepoMock.Verify(
-                repo => repo.RemoverChunksPorDocumentoIdAsync(It.IsAny<Guid>()),
+               repo => repo.RemoverChunksPorDocumentoIdAsync(idMateria, It.IsAny<Guid>()),
                 Times.Never);
         }
     }
