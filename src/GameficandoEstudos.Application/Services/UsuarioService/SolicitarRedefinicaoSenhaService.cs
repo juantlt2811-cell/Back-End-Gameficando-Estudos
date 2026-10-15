@@ -27,10 +27,7 @@ namespace GameficandoEstudos.Application.Services.UsuarioService
             if (usuario == null)
                 return;
 
-            var tokenBruto = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
+            var tokenBruto = TokenHashHelper.GerarTokenBruto();
 
             var tokenHash = TokenHashHelper.GerarHash(tokenBruto);
 

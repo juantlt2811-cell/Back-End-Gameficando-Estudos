@@ -16,6 +16,7 @@ namespace GameficandoEstudos.Infrastructure.Data
         public DbSet<SessaoPratica> SessoesPratica { get; set; }
         public DbSet<TentativaResposta> TentativasResposta { get; set; }
         public DbSet<LogAuditoria> LogsAuditoria { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -123,6 +124,17 @@ namespace GameficandoEstudos.Infrastructure.Data
                  .WithMany()
                  .HasForeignKey(t => t.IdAtividade)
                  .OnDelete(DeleteBehavior.Restrict); 
+            });
+            modelBuilder.Entity<RefreshToken>(b =>
+            {
+                b.HasKey(r => r.Id);
+                b.Property(r => r.TokenHash).IsRequired().HasMaxLength(100);
+                b.HasIndex(r => r.TokenHash).IsUnique();
+
+                b.HasOne<Usuario>()
+                 .WithMany()
+                 .HasForeignKey(r => r.IdUsuario)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

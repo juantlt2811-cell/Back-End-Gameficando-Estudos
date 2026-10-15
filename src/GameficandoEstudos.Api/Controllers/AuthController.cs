@@ -18,17 +18,23 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly SolicitarRedefinicaoSenhaService _solicitarRedefinicaoSenhaService;
         private readonly RedefinirSenhaService _redefinirSenhaService;
         private readonly AlterarSenhaService _alterarSenhaService;
+        private readonly RefreshTokenService _refreshTokenService;
+        private readonly LogoutService _logoutService;
         public AuthController(CadastrarUsuarioService cadastrarService, 
             AutenticarUsuarioService autenticarService, 
             SolicitarRedefinicaoSenhaService solicitarRedefinicaoSenhaService, 
             RedefinirSenhaService redifinirSenhaService,
-            AlterarSenhaService alterarSenhaService)
+            AlterarSenhaService alterarSenhaService,
+            RefreshTokenService refreshTokenService,
+            LogoutService logoutService)
         {
             _cadastrarService = cadastrarService;
             _autenticarService = autenticarService;
             _solicitarRedefinicaoSenhaService = solicitarRedefinicaoSenhaService;
             _redefinirSenhaService = redifinirSenhaService;
             _alterarSenhaService = alterarSenhaService;
+            _refreshTokenService = refreshTokenService;
+            _logoutService = logoutService;
         }
 
         [HttpPost("cadastrar")]
@@ -101,6 +107,28 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return BadRequest(new { Erro = ex.Message });
             }
+        }
+        [HttpPost("refresh")]
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenDto dto)
+        {
+            try
+            {
+                var resultado = await _refreshTokenService.ExecutarAsync(dto.RefreshToken);
+                return Ok(resultado);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Erro = ex.Message });
+            }
+        }
+
+        [HttpPost("logout")]
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Logout([FromBody] LogoutDto dto)
+        {
+            await _logoutService.ExecutarAsync(dto.RefreshToken);
+            return Ok(new { Mensagem = "Logout realizado com sucesso." });
         }
         private int ObterUsuarioIdAutenticado()
         {

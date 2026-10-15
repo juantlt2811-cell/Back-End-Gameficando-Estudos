@@ -115,6 +115,7 @@ builder.Services.AddScoped<ISessaoPraticaRepository, SessaoPraticaRepository>();
 builder.Services.AddScoped<IRankingRepository, RankingRepository>();
 builder.Services.AddScoped<IExtratorDeTextoService, ExtratorDeTextoService>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<IEmailService, FakeEmailService>();
 else

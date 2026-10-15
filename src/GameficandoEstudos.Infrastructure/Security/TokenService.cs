@@ -42,5 +42,9 @@ namespace GameficandoEstudos.Infrastructure.Security
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        public int ObterDuracaoRefreshTokenEmDias()
+        {
+            return int.Parse(_configuration["Jwt:RefreshTokenDuracaoEmDias"] ?? "7");
+        }
     }
 }
