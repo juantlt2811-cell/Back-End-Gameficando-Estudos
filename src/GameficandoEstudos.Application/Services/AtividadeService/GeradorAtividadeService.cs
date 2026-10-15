@@ -1,4 +1,5 @@
-﻿using GameficandoEstudos.Application.Interfaces;
+﻿using GameficandoEstudos.Application.DTOs;
+using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
 using GameficandoEstudos.Domain.Enums;
 using System;
@@ -30,7 +31,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             _auditoriaService = auditoriaService;
         }
 
-        public async Task<string> GerarAtividadeAsync(int idMateria, string temaDesejado, TipoAtividade tipoAtividade, int idProfessorLogado)
+        public async Task<AtividadeGeradaDto> GerarAtividadeAsync(
+            int idMateria, string temaDesejado, TipoAtividade tipoAtividade, int idProfessorLogado)
         {
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)
@@ -39,11 +41,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             var chunksRelevantes = await _vectorSearch.BuscarChunksRelevantesAsync(idMateria, temaDesejado);
 
             if (chunksRelevantes == null || !chunksRelevantes.Any())
-            {
                 throw new InvalidOperationException("Nenhuma fonte encontrada para essa matéria e tema");
-            }
 
-            
             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
                          $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
                          "Formate a resposta EXCLUSIVAMENTE como um JSON válido com duas propriedades: " +
@@ -52,11 +51,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                          "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
 
             var respostaLlm = await _llmService.GerarRespostaAsync(prompt);
-
-            
             var jsonLimpo = respostaLlm.Replace("```json", "").Replace("```", "").Trim();
 
-            
             RespostaIaDto atividadeGerada;
             try
             {
@@ -68,7 +64,6 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 throw new InvalidOperationException($"O LLM não retornou um JSON válido. Resposta original: {respostaLlm}", ex);
             }
 
-            
             var novaAtividade = new Atividade(
                 nome: temaDesejado,
                 tipo: tipoAtividade,
@@ -82,10 +77,15 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             await _auditoriaService.RegistrarAsync(
                 idProfessorLogado, "Atividade.Gerar", "Atividade", atividadeCriada.Id.ToString(), $"Tema: {temaDesejado}");
 
-            return jsonLimpo;
+            return new AtividadeGeradaDto(
+                atividadeCriada.Id,
+                atividadeCriada.Nome,
+                atividadeCriada.Tipo.ToString(),
+                atividadeCriada.Conteudo,
+                atividadeCriada.Gabarito,
+                atividadeCriada.IdMateria);
         }
 
-        
         private record RespostaIaDto(string Conteudo, string Gabarito);
     }
 }

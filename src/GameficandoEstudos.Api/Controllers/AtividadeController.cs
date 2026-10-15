@@ -45,14 +45,20 @@ namespace GameficandoEstudos.Api.Controllers
 
         [HttpPost("gerar")]
         [EnableRateLimiting("ia")]
-        [Authorize(Roles = "Professor")] 
+        [Authorize(Roles = "Professor")]
         public async Task<IActionResult> Gerar([FromBody] GerarAtividadeDto dto)
         {
             try
             {
                 var tipo = (TipoAtividade)dto.TipoAtividade;
-                var jsonLlm = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo, ObterUsuarioIdAutenticado());
-                return Ok(new { Mensagem = "Atividade gerada com sucesso", Detalhes = jsonLlm });
+                int idProfessor = ObterUsuarioIdAutenticado();
+
+                var atividadeGerada = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo, idProfessor);
+                return Ok(atividadeGerada);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Proibido(ex.Message);
             }
             catch (Exception ex)
             {

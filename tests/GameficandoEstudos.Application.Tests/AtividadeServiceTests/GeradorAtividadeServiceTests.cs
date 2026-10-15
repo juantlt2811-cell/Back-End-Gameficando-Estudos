@@ -49,8 +49,10 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             var resultado = await service.GerarAtividadeAsync(idMateriaFake, temaFake, tipoAtividade, idProfessorLogado);
 
-            resultado.Should().NotBeNullOrEmpty();
-            resultado.Should().Contain("\"conteudo\"");
+            resultado.Conteudo.Should().Be("O que é RAM?");
+            resultado.Gabarito.Should().Be("Memória volátil");
+            resultado.Tipo.Should().Be("MultiplaEscolha");
+            resultado.IdMateria.Should().Be(idMateriaFake);
 
             atividadeRepositoryMock.Verify(repo => repo.AdicionarAsync(It.Is<Atividade>(a =>
                 a.Conteudo == "O que é RAM?" &&
