@@ -16,6 +16,7 @@ namespace GameficandoEstudos.Domain.Entities
         public PerfilGamificacao? Gamificacao { get; private set; }
         public string? TokenRedefinicaoSenhaHash { get; private set; }
         public DateTime? TokenRedefinicaoSenhaExpiraEm { get; private set; }
+        public DateTime? AnonimizadoEm { get; private set; }
 
         private Usuario() { }
         public Usuario(string nome, string email, string senha, TipoUsuario tipo)
@@ -73,6 +74,21 @@ namespace GameficandoEstudos.Domain.Entities
         {
             TokenRedefinicaoSenhaHash = null;
             TokenRedefinicaoSenhaExpiraEm = null;
+            AtualizadoEm = DateTime.UtcNow;
+        }
+        public void Anonimizar(string senhaHashInutilizavel)
+        {
+            if (AnonimizadoEm != null)
+                return; 
+
+            ArgumentException.ThrowIfNullOrEmpty(senhaHashInutilizavel, nameof(senhaHashInutilizavel));
+
+            Nome = "Usuário Removido";
+            Email = $"removido-{Guid.NewGuid():N}@anonimizado.local";
+            Senha = senhaHashInutilizavel;
+            TokenRedefinicaoSenhaHash = null;
+            TokenRedefinicaoSenhaExpiraEm = null;
+            AnonimizadoEm = DateTime.UtcNow;
             AtualizadoEm = DateTime.UtcNow;
         }
     }

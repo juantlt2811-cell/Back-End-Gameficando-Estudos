@@ -33,4 +33,11 @@ public class SessaoPraticaRepository : ISessaoPraticaRepository
         _context.SessoesPratica.Update(sessao);
         await _context.SaveChangesAsync();
     }
+    public async Task<List<SessaoPratica>> ListarPorUsuarioAsync(int idUsuario)
+    {
+        return await _context.SessoesPratica
+            .Include(s => s.Tentativas)
+            .Where(s => s.IdUsuario == idUsuario)
+            .ToListAsync();
+    }
 }

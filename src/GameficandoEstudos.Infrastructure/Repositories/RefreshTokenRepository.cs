@@ -30,4 +30,15 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context.RefreshTokens.Update(refreshToken);
         await _context.SaveChangesAsync();
     }
+    public async Task RevogarTodosPorUsuarioAsync(int idUsuario)
+    {
+        var tokensAtivos = await _context.RefreshTokens
+            .Where(r => r.IdUsuario == idUsuario && r.RevogadoEm == null)
+            .ToListAsync();
+
+        foreach (var token in tokensAtivos)
+            token.Revogar();
+
+        await _context.SaveChangesAsync();
+    }
 }

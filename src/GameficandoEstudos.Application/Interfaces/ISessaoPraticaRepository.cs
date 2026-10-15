@@ -7,5 +7,6 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<SessaoPratica> AdicionarAsync(SessaoPratica sessao);
         Task<SessaoPratica?> ObterPorIdComTentativasAsync(int id);
         Task AtualizarAsync(SessaoPratica sessao);
+        Task<List<SessaoPratica>> ListarPorUsuarioAsync(int idUsuario);
     }
 }

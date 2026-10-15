@@ -7,5 +7,6 @@ namespace GameficandoEstudos.Application.Interfaces
         Task AdicionarAsync(RefreshToken refreshToken);
         Task<RefreshToken?> ObterPorHashAsync(string tokenHash);
         Task AtualizarAsync(RefreshToken refreshToken);
+        Task RevogarTodosPorUsuarioAsync(int idUsuario);
     }
 }

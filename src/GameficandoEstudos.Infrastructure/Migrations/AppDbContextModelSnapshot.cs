@@ -337,6 +337,9 @@ namespace GameficandoEstudos.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("AnonimizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("AtualizadoEm")
                         .HasColumnType("timestamp with time zone");
 
