@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Services.UsuarioService;
+using GameficandoEstudos.Application.DTOs;
 
 namespace GameficandoEstudos.Api.Controllers
 {
