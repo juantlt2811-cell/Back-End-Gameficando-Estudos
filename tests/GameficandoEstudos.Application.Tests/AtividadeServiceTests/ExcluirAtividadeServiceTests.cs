@@ -17,6 +17,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
         {
             var repositoryMock = new Mock<IAtividadeRepository>();
             var materiaRepoMock = new Mock<IMateriaRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
             int idAtividade = 1;
             int idProfessorLogado = 1;
             int idMateria = 10;
@@ -30,12 +31,15 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
 
-            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object);
+            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object, auditoriaServiceMock.Object);
 
             Func<Task> act = async () => await service.ExecutarAsync(idAtividade, idProfessorLogado);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("Atividade não encontrada.");
+
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -43,6 +47,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
         {
             var repositoryMock = new Mock<IAtividadeRepository>();
             var materiaRepoMock = new Mock<IMateriaRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
             int idAtividade = 1;
             int idProfessorLogado = 1;
             int idMateria = 10;
@@ -60,15 +65,17 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
 
-            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object);
+            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object, auditoriaServiceMock.Object);
 
             await service.ExecutarAsync(idAtividade, idProfessorLogado);
 
-            atividade.Ativa.Should().BeFalse(); 
+            atividade.Ativa.Should().BeFalse();
 
             repositoryMock.Verify(repo => repo.AtualizarAsync(atividade), Times.Once);
-
             repositoryMock.Verify(repo => repo.RemoverAsync(It.IsAny<Atividade>()), Times.Never);
+
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                idProfessorLogado, "Atividade.Inativar", "Atividade", idAtividade.ToString(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -76,6 +83,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
         {
             var repositoryMock = new Mock<IAtividadeRepository>();
             var materiaRepoMock = new Mock<IMateriaRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
             int idAtividade = 1;
             int idMateria = 10;
             int idProfessorDono = 1;
@@ -93,26 +101,29 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
 
-            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object);
+            var service = new ExcluirAtividadeService(repositoryMock.Object, materiaRepoMock.Object, auditoriaServiceMock.Object);
 
             await service.ExecutarAsync(idAtividade, idProfessorLogado);
 
             repositoryMock.Verify(repo => repo.RemoverAsync(atividade), Times.Once);
-
             repositoryMock.Verify(repo => repo.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
 
             atividade.Ativa.Should().BeTrue();
+
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                idProfessorLogado, "Atividade.Remover", "Atividade", idAtividade.ToString(), It.IsAny<string>()), Times.Once);
         }
+
         [Fact]
         public async Task ExecutarAsync_QuandoProfessorNaoForDono_DeveLancarExcecaoDeNaoAutorizado()
         {
-            // Arrange
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var materiaRepoMock = new Mock<IMateriaRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
 
             int idAtividade = 1;
             int idMateria = 10;
-            int idProfessorHacker = 999; 
+            int idProfessorHacker = 999;
             int idProfessorDono = 1;
 
             var atividade = new Atividade("Questão", TipoAtividade.MultiplaEscolha, "Conteúdo", "Gabarito", idMateria);
@@ -124,7 +135,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             atividadeRepoMock.Setup(repo => repo.ObterPorIdAsync(idAtividade)).ReturnsAsync(atividade);
             materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
 
-            var service = new ExcluirAtividadeService(atividadeRepoMock.Object, materiaRepoMock.Object);
+            var service = new ExcluirAtividadeService(atividadeRepoMock.Object, materiaRepoMock.Object, auditoriaServiceMock.Object);
 
             Func<Task> act = async () => await service.ExecutarAsync(idAtividade, idProfessorHacker);
 
@@ -133,6 +144,8 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             atividadeRepoMock.Verify(repo => repo.RemoverAsync(It.IsAny<Atividade>()), Times.Never);
             atividadeRepoMock.Verify(repo => repo.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

@@ -6,10 +6,12 @@ namespace GameficandoEstudos.Application.Services.MateriaService
     public class DeletarMateriaService
     {
         private readonly IMateriaRepository _materiaRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public DeletarMateriaService(IMateriaRepository materiaRepository)
+        public DeletarMateriaService(IMateriaRepository materiaRepository, IAuditoriaService auditoriaService)
         {
             _materiaRepository = materiaRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task ExecutarAsync(int id, int idProfessor)
@@ -21,6 +23,7 @@ namespace GameficandoEstudos.Application.Services.MateriaService
 
 
             await _materiaRepository.DeletarAsync(id);
+            await _auditoriaService.RegistrarAsync(idProfessor, "Materia.Deletar", "Materia", id.ToString());
         }
     }
 }

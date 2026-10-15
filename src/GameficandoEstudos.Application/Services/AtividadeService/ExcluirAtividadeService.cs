@@ -10,11 +10,13 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
     {
         private readonly IAtividadeRepository _atividadeRepository;
         private readonly IMateriaRepository _materiaRepository; 
+        private readonly IAuditoriaService _auditoriaService;
 
-        public ExcluirAtividadeService(IAtividadeRepository atividadeRepository, IMateriaRepository materiaRepository)
+        public ExcluirAtividadeService(IAtividadeRepository atividadeRepository, IMateriaRepository materiaRepository, IAuditoriaService auditoriaService)
         {
             _atividadeRepository = atividadeRepository;
             _materiaRepository = materiaRepository;
+            _auditoriaService = auditoriaService;   
         }
 
         public async Task ExecutarAsync(int idAtividade, int idProfessorLogado)
@@ -36,10 +38,12 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             {
                 atividade.Inativar();
                 await _atividadeRepository.AtualizarAsync(atividade);
+                await _auditoriaService.RegistrarAsync(idProfessorLogado, "Atividade.Inativar", "Atividade", idAtividade.ToString());
             }
             else
             {
                 await _atividadeRepository.RemoverAsync(atividade);
+                await _auditoriaService.RegistrarAsync(idProfessorLogado, "Atividade.Remover", "Atividade", idAtividade.ToString());
             }
         }
     }

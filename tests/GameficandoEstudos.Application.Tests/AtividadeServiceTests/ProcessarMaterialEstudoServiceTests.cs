@@ -17,6 +17,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             var llmMock = new Mock<ILlmService>();
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
 
             int idMateria = 1;
             int idProfessorHacker = 999;
@@ -27,7 +28,8 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
 
-            var service = new ProcessarMaterialEstudoService(llmMock.Object, materiaRepoMock.Object, caixaRepoMock.Object);
+            var service = new ProcessarMaterialEstudoService(
+                llmMock.Object, materiaRepoMock.Object, caixaRepoMock.Object, auditoriaServiceMock.Object);
 
             Func<Task> act = async () => await service.ProcessarTextoAsync(idMateria, "Livro Teste", "Conteúdo do livro...", idProfessorHacker);
 
@@ -35,6 +37,39 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                 .WithMessage("Você não tem permissão para adicionar materiais nesta matéria.");
 
             llmMock.Verify(x => x.GerarEmbeddingsAsync(It.IsAny<string>()), Times.Never);
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessarTextoAsync_QuandoProfessorEhDono_DeveProcessarERegistrarAuditoria()
+        {
+            var llmMock = new Mock<ILlmService>();
+            var materiaRepoMock = new Mock<IMateriaRepository>();
+            var caixaRepoMock = new Mock<ICaixaFontesRepository>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
+
+            int idMateria = 1;
+            int idProfessor = 1;
+
+            var materia = new Materia("Redes", 60, "Média", idProfessor);
+            typeof(Materia).GetProperty("Id")?.SetValue(materia, idMateria);
+
+            var caixa = new CaixaFontes("Base de Conhecimento - Materia 1", idMateria);
+            typeof(CaixaFontes).GetProperty("Id")?.SetValue(caixa, 1);
+
+            materiaRepoMock.Setup(repo => repo.ObterPorIdAsync(idMateria)).ReturnsAsync(materia);
+            caixaRepoMock.Setup(repo => repo.ObterPorMateriaAsync(idMateria)).ReturnsAsync(caixa);
+            llmMock.Setup(l => l.GerarEmbeddingsAsync(It.IsAny<string>())).ReturnsAsync(new float[] { 0.1f });
+
+            var service = new ProcessarMaterialEstudoService(
+                llmMock.Object, materiaRepoMock.Object, caixaRepoMock.Object, auditoriaServiceMock.Object);
+
+            await service.ProcessarTextoAsync(idMateria, "Livro Teste", "Conteúdo relevante do livro.", idProfessor);
+
+            caixaRepoMock.Verify(repo => repo.AtualizarAsync(caixa), Times.Once);
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                idProfessor, "CaixaFontes.AdicionarMaterial", "Materia", idMateria.ToString(), It.IsAny<string>()), Times.Once);
         }
     }
 }

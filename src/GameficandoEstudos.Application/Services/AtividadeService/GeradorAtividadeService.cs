@@ -14,20 +14,23 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         private readonly ILlmService _llmService;
         private readonly IAtividadeRepository _atividadeRepository;
         private readonly IMateriaRepository _materiaRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
         public GeradorAtividadeService(
             IVectorSearchService vectorSearch,
             ILlmService llmService,
             IAtividadeRepository atividadeRepository,
-            IMateriaRepository materiaRepository)
+            IMateriaRepository materiaRepository,
+            IAuditoriaService auditoriaService)
         {
             _vectorSearch = vectorSearch;
             _llmService = llmService;
             _atividadeRepository = atividadeRepository;
             _materiaRepository = materiaRepository;
+            _auditoriaService = auditoriaService;
         }
 
-        public async Task<string> GerarAtividadeAsync(int idMateria, string temaDesejado, TipoAtividade tipoAtividade)
+        public async Task<string> GerarAtividadeAsync(int idMateria, string temaDesejado, TipoAtividade tipoAtividade, int idProfessorLogado)
         {
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)
@@ -74,9 +77,11 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 idMateria: idMateria
             );
 
-            await _atividadeRepository.AdicionarAsync(novaAtividade);
+            var atividadeCriada = await _atividadeRepository.AdicionarAsync(novaAtividade);
 
-            
+            await _auditoriaService.RegistrarAsync(
+                idProfessorLogado, "Atividade.Gerar", "Atividade", atividadeCriada.Id.ToString(), $"Tema: {temaDesejado}");
+
             return jsonLimpo;
         }
 

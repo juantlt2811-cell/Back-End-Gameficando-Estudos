@@ -12,18 +12,19 @@ namespace GameficandoEstudos.Tests.Services
     public class CriarMateriaServiceTests
     {
         private readonly Mock<IMateriaRepository> _materiaRepositoryMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly CriarMateriaService _service;
 
         public CriarMateriaServiceTests()
         {
             _materiaRepositoryMock = new Mock<IMateriaRepository>();
-            _service = new CriarMateriaService(_materiaRepositoryMock.Object);
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
+            _service = new CriarMateriaService(_materiaRepositoryMock.Object, _auditoriaServiceMock.Object);
         }
 
         [Fact]
         public async Task ExecutarAsync_DeveCriarMateria_E_RetornarId()
         {
-          
             var dto = new CriarMateriaDto("Matemática", 40, "Fácil");
             var idProfessor = 1;
 
@@ -36,6 +37,9 @@ namespace GameficandoEstudos.Tests.Services
 
             _materiaRepositoryMock.Verify(repo => repo.AdicionarAsync(It.IsAny<Materia>()), Times.Once);
             resultado.Should().Be(materiaCriada.Id);
+
+            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                idProfessor, "Materia.Criar", "Materia", It.IsAny<string>(), It.IsAny<string>()), Times.Once);
         }
     }
 }

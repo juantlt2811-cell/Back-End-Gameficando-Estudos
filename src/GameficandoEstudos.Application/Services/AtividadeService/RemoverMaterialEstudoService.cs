@@ -8,11 +8,13 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
     {
         private readonly IMateriaRepository _materiaRepository;
         private readonly ICaixaFontesRepository _caixaFontesRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public RemoverMaterialEstudoService(IMateriaRepository materiaRepository, ICaixaFontesRepository caixaFontesRepository)
+        public RemoverMaterialEstudoService(IMateriaRepository materiaRepository, ICaixaFontesRepository caixaFontesRepository, IAuditoriaService auditoriaService)
         {
             _materiaRepository = materiaRepository;
             _caixaFontesRepository = caixaFontesRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task ExecutarAsync(int idMateria, Guid documentoId, int idProfessorLogado)
@@ -30,6 +32,9 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
 
             
             await _caixaFontesRepository.RemoverChunksPorDocumentoIdAsync(idMateria, documentoId);
+
+            await _auditoriaService.RegistrarAsync(
+                idProfessorLogado, "CaixaFontes.RemoverMaterial", "Materia", idMateria.ToString(), $"DocumentoId: {documentoId}");
         }
     }
 }

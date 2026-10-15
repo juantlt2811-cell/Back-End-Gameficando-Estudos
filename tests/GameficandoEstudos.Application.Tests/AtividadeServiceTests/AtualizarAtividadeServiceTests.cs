@@ -15,13 +15,16 @@ namespace GameficandoEstudos.Tests.Services.AtividadeService
     {
         private readonly Mock<IAtividadeRepository> _atividadeRepositoryMock;
         private readonly Mock<IMateriaRepository> _materiaRepositoryMock;
+        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly AtualizarAtividadeService _service;
 
         public AtualizarAtividadeServiceTests()
         {
             _atividadeRepositoryMock = new Mock<IAtividadeRepository>();
             _materiaRepositoryMock = new Mock<IMateriaRepository>();
-            _service = new AtualizarAtividadeService(_atividadeRepositoryMock.Object, _materiaRepositoryMock.Object);
+            _auditoriaServiceMock = new Mock<IAuditoriaService>();
+            _service = new AtualizarAtividadeService(
+                _atividadeRepositoryMock.Object, _materiaRepositoryMock.Object, _auditoriaServiceMock.Object);
         }
 
         [Fact]
@@ -42,6 +45,8 @@ namespace GameficandoEstudos.Tests.Services.AtividadeService
             atividade.Gabarito.Should().Be("B");
 
             _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(atividade), Times.Once);
+            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                professorLogadoId, "Atividade.Atualizar", "Atividade", dto.Id.ToString(), It.IsAny<string>()), Times.Once);
         }
 
         [Fact]
@@ -55,6 +60,9 @@ namespace GameficandoEstudos.Tests.Services.AtividadeService
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                      .WithMessage("Atividade não encontrada.");
+
+            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]
@@ -76,6 +84,8 @@ namespace GameficandoEstudos.Tests.Services.AtividadeService
                      .WithMessage("Você não tem permissão para alterar atividades de outros professores.");
 
             _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
+            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
     }
 }

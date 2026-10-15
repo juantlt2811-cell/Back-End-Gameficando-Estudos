@@ -10,12 +10,14 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         private readonly ILlmService _llmService;
         private readonly IMateriaRepository _materiaRepository;
         private readonly ICaixaFontesRepository _caixaFontesRepository;
+        private readonly IAuditoriaService _auditoriaService;
 
-        public ProcessarMaterialEstudoService(ILlmService llmService, IMateriaRepository materiaRepository, ICaixaFontesRepository caixaFontesRepository)
+        public ProcessarMaterialEstudoService(ILlmService llmService, IMateriaRepository materiaRepository, ICaixaFontesRepository caixaFontesRepository, IAuditoriaService auditoriaService)
         {
             _llmService = llmService;
             _materiaRepository = materiaRepository;
             _caixaFontesRepository = caixaFontesRepository;
+            _auditoriaService = auditoriaService;
         }
 
         public async Task ProcessarTextoAsync(int idMateria, string tituloMaterial, string textoCompleto, int idProfessorLogado)
@@ -50,6 +52,9 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             }
 
             await _caixaFontesRepository.AtualizarAsync(caixa);
+
+            await _auditoriaService.RegistrarAsync(
+                idProfessorLogado, "CaixaFontes.AdicionarMaterial", "Materia", idMateria.ToString(), $"Origem: {tituloMaterial}");
         }
     }
 }

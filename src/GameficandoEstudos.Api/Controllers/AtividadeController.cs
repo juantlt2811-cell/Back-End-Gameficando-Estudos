@@ -51,7 +51,7 @@ namespace GameficandoEstudos.Api.Controllers
             try
             {
                 var tipo = (TipoAtividade)dto.TipoAtividade;
-                var jsonLlm = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo);
+                var jsonLlm = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo, ObterUsuarioIdAutenticado());
                 return Ok(new { Mensagem = "Atividade gerada com sucesso", Detalhes = jsonLlm });
             }
             catch (Exception ex)

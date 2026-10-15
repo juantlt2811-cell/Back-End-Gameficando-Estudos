@@ -137,6 +137,40 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.ToTable("FonteChunks");
                 });
 
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.LogAuditoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Acao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Detalhes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Entidade")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdEntidade")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RegistradoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LogsAuditoria");
+                });
+
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.Materia", b =>
                 {
                     b.Property<int>("Id")

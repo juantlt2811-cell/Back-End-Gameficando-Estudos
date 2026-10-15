@@ -24,9 +24,10 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             var materiaRepoMock = new Mock<IMateriaRepository>();
             var caixaRepoMock = new Mock<ICaixaFontesRepository>();
             var llmMock = new Mock<ILlmService>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
 
             var processarMaterialService = new ProcessarMaterialEstudoService(
-                llmMock.Object, materiaRepoMock.Object, caixaRepoMock.Object);
+                llmMock.Object, materiaRepoMock.Object, caixaRepoMock.Object, auditoriaServiceMock.Object);
 
             var service = new ProcessarArquivoEstudoService(extratorMock.Object, processarMaterialService);
 

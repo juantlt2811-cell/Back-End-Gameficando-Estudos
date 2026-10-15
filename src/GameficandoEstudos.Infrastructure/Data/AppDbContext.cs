@@ -15,6 +15,7 @@ namespace GameficandoEstudos.Infrastructure.Data
         public DbSet<Atividade> Atividades { get; set; }
         public DbSet<SessaoPratica> SessoesPratica { get; set; }
         public DbSet<TentativaResposta> TentativasResposta { get; set; }
+        public DbSet<LogAuditoria> LogsAuditoria { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
