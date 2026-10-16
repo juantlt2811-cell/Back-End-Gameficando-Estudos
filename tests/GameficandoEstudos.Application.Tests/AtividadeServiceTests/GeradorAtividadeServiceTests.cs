@@ -50,14 +50,19 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             var resultado = await service.GerarAtividadeAsync(idMateriaFake, temaFake, tipoAtividade, idProfessorLogado);
 
             resultado.Conteudo.Should().Be("O que é RAM?");
-            resultado.Alternativas.Should().BeEquivalentTo(new[] { "A) Memória volátil", "B) Memória permanente" });
-            resultado.Gabarito.Should().Be("A");
             resultado.Tipo.Should().Be("MultiplaEscolha");
             resultado.IdMateria.Should().Be(idMateriaFake);
+            resultado.Alternativas.Should().HaveCount(2);
+            resultado.Alternativas.Should().Contain(a => a.EndsWith("Memória volátil"));
+            resultado.Alternativas.Should().Contain(a => a.EndsWith("Memória permanente"));
+
+            var letras = new[] { "A", "B" };
+            resultado.Gabarito.Should().BeOneOf(letras);
+            int indiceGabarito = Array.IndexOf(letras, resultado.Gabarito);
+            resultado.Alternativas[indiceGabarito].Should().EndWith("Memória volátil");
 
             atividadeRepositoryMock.Verify(repo => repo.AdicionarAsync(It.Is<Atividade>(a =>
                 a.Conteudo == "O que é RAM?" &&
-                a.Gabarito == "A" &&
                 a.Tipo == TipoAtividade.MultiplaEscolha &&
                 a.Alternativas.Count == 2
             )), Times.Once);

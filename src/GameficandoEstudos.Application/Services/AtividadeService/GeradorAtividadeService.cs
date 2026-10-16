@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace GameficandoEstudos.Application.Services.AtividadeService
@@ -78,13 +79,21 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                     $"O LLM não retornou alternativas suficientes para uma atividade de múltipla escolha. Resposta original: {respostaLlm}");
             }
 
+            var alternativasFinais = atividadeGerada.Alternativas ?? new List<string>();
+            var gabaritoFinal = atividadeGerada.Gabarito;
+
+            if (tipoAtividade == TipoAtividade.MultiplaEscolha)
+            {
+                (alternativasFinais, gabaritoFinal) = EmbaralharAlternativas(atividadeGerada.Alternativas!, atividadeGerada.Gabarito);
+            }
+
             var novaAtividade = new Atividade(
                 nome: temaDesejado,
                 tipo: tipoAtividade,
                 conteudo: atividadeGerada.Enunciado,
-                gabarito: atividadeGerada.Gabarito,
+                gabarito: gabaritoFinal,
                 idMateria: idMateria,
-                alternativas: atividadeGerada.Alternativas ?? new List<string>()
+                alternativas: alternativasFinais
             );
 
             var atividadeCriada = await _atividadeRepository.AdicionarAsync(novaAtividade);
@@ -100,6 +109,52 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 atividadeCriada.Alternativas,
                 atividadeCriada.Gabarito,
                 atividadeCriada.IdMateria);
+        }
+
+        /// <summary>
+        /// Embaralha a ordem das alternativas e recalcula a letra do gabarito de acordo com a nova
+        /// posição da resposta correta — independe de qualquer tentativa (não confiável) de pedir
+        /// variação de posição diretamente à IA.
+        /// </summary>
+        private static (List<string> Alternativas, string Gabarito) EmbaralharAlternativas(
+            List<string> alternativasOriginais, string gabaritoOriginal)
+        {
+            var textos = alternativasOriginais
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(RemoverPrefixoDeLetra)
+                .ToList();
+
+            int indiceCorretoOriginal = LetraParaIndice(gabaritoOriginal);
+            string textoCorreto = indiceCorretoOriginal >= 0 && indiceCorretoOriginal < textos.Count
+                ? textos[indiceCorretoOriginal]
+                : textos[0]; 
+
+            var embaralhadas = textos.OrderBy(_ => Random.Shared.Next()).ToList();
+
+            int novoIndiceCorreto = embaralhadas.IndexOf(textoCorreto);
+            if (novoIndiceCorreto < 0)
+                novoIndiceCorreto = 0;
+
+            var letras = new[] { "A", "B", "C", "D", "E", "F" };
+            var comPrefixo = embaralhadas
+                .Select((texto, i) => $"{letras[Math.Min(i, letras.Length - 1)]}) {texto}")
+                .ToList();
+
+            return (comPrefixo, letras[Math.Min(novoIndiceCorreto, letras.Length - 1)]);
+        }
+
+        private static string RemoverPrefixoDeLetra(string alternativa)
+        {
+            return Regex.Replace(alternativa.Trim(), @"^[A-Za-z][\)\.\-:]\s*", "");
+        }
+
+        private static int LetraParaIndice(string letra)
+        {
+            if (string.IsNullOrWhiteSpace(letra))
+                return -1;
+
+            char c = char.ToUpperInvariant(letra.Trim()[0]);
+            return c is >= 'A' and <= 'Z' ? c - 'A' : -1;
         }
 
         private record RespostaIaDto(string Enunciado, List<string>? Alternativas, string Gabarito);
