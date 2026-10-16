@@ -31,6 +31,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 a.Nome,
                 a.Tipo.ToString(),
                 a.Conteudo,
+                a.Alternativas,
                 a.IdMateria,
                 a.Ativa
             ));

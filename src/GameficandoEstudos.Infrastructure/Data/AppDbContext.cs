@@ -60,6 +60,7 @@ namespace GameficandoEstudos.Infrastructure.Data
                 b.HasKey(a => a.Id);
                 b.Property(a => a.Nome).IsRequired().HasMaxLength(150);
                 b.Property(a => a.Conteudo).IsRequired();
+                b.Property(a => a.Alternativas).HasColumnType("text[]");
                 b.Property(a => a.Gabarito).IsRequired();
 
                 b.HasOne(a => a.Materia)

@@ -37,7 +37,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             mockLlmService
                 .Setup(ia => ia.GerarRespostaAsync(It.IsAny<string>()))
-                .ReturnsAsync("{ \"conteudo\": \"O que é RAM?\", \"gabarito\": \"Memória volátil\" }");
+                .ReturnsAsync("{ \"enunciado\": \"O que é RAM?\", \"alternativas\": [\"A) Memória volátil\", \"B) Memória permanente\"], \"gabarito\": \"A\" }");
 
             atividadeRepositoryMock
                 .Setup(repo => repo.AdicionarAsync(It.IsAny<Atividade>()))
@@ -50,14 +50,16 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             var resultado = await service.GerarAtividadeAsync(idMateriaFake, temaFake, tipoAtividade, idProfessorLogado);
 
             resultado.Conteudo.Should().Be("O que é RAM?");
-            resultado.Gabarito.Should().Be("Memória volátil");
+            resultado.Alternativas.Should().BeEquivalentTo(new[] { "A) Memória volátil", "B) Memória permanente" });
+            resultado.Gabarito.Should().Be("A");
             resultado.Tipo.Should().Be("MultiplaEscolha");
             resultado.IdMateria.Should().Be(idMateriaFake);
 
             atividadeRepositoryMock.Verify(repo => repo.AdicionarAsync(It.Is<Atividade>(a =>
                 a.Conteudo == "O que é RAM?" &&
-                a.Gabarito == "Memória volátil" &&
-                a.Tipo == TipoAtividade.MultiplaEscolha
+                a.Gabarito == "A" &&
+                a.Tipo == TipoAtividade.MultiplaEscolha &&
+                a.Alternativas.Count == 2
             )), Times.Once);
 
             auditoriaServiceMock.Verify(a => a.RegistrarAsync(

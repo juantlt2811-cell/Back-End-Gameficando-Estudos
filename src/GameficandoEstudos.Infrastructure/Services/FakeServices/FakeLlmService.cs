@@ -8,7 +8,9 @@ namespace GameficandoEstudos.Infrastructure.Services.FakeServices
     {
         public Task<string> GerarRespostaAsync(string prompt)
         {
-            string jsonFake = "{\"Conteudo\": \"Pergunta gerada por IA (Modo Fake).\\nA) Opção Correta\\nB) Opção Errada\", \"Gabarito\": \"A\"}";
+            string jsonFake = "{\"Enunciado\": \"Pergunta gerada por IA (Modo Fake).\", " +
+                               "\"Alternativas\": [\"A) Opção Correta\", \"B) Opção Errada\"], " +
+                               "\"Gabarito\": \"A\"}";
             return Task.FromResult(jsonFake);
         }
 

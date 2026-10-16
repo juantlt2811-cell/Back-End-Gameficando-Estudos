@@ -28,7 +28,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             if (materia == null || materia.IdProfessor != idProfessorLogado)
                 throw new UnauthorizedAccessException("Você não tem permissão para alterar atividades de outros professores.");
 
-            atividade.Atualizar(dto.Nome, dto.Conteudo, dto.Gabarito);
+            atividade.Atualizar(dto.Nome, dto.Conteudo, dto.Gabarito, dto.Alternativas);
 
             await _atividadeRepository.AtualizarAsync(atividade);
             await _auditoriaService.RegistrarAsync(idProfessorLogado, "Atividade.Atualizar", "Atividade", dto.Id.ToString());

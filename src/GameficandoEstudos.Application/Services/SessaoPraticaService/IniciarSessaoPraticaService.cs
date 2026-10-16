@@ -50,7 +50,7 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
 
             return new SessaoPraticaIniciadaDto(
                 sessao.Id,
-                questoes.Select(q => new QuestaoSessaoDto(q.Id, q.Nome, q.Tipo, q.Conteudo)).ToList());
+                questoes.Select(q => new QuestaoSessaoDto(q.Id, q.Nome, q.Tipo, q.Conteudo, q.Alternativas)).ToList());
         }
     }
 }

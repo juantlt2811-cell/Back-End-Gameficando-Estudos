@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace GameficandoEstudos.Application.DTOs
 {
@@ -13,5 +14,8 @@ namespace GameficandoEstudos.Application.DTOs
         string Conteudo,
 
         [param: Required(ErrorMessage = "O gabarito da atividade é obrigatório.")]
-        string Gabarito);
+        string Gabarito,
+
+        // Opcional: só é usada/validada para atividades de múltipla escolha (ver Atividade.Atualizar).
+        List<string>? Alternativas = null);
 }

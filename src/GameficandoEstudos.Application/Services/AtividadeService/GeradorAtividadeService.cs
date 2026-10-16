@@ -3,6 +3,7 @@ using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
 using GameficandoEstudos.Domain.Enums;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -43,11 +44,17 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             if (chunksRelevantes == null || !chunksRelevantes.Any())
                 throw new InvalidOperationException("Nenhuma fonte encontrada para essa matéria e tema");
 
+            var instrucaoAlternativas = tipoAtividade == TipoAtividade.MultiplaEscolha
+                ? "\"alternativas\" (um array com EXATAMENTE 4 strings, cada uma sendo uma opção completa, ex.: \"A) Texto da opção\") e "
+                : "\"alternativas\" (um array vazio []) e ";
+
             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
                          $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
-                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com duas propriedades: " +
-                         "\"conteudo\" (contendo o enunciado da questão e as opções de A a D, se for múltipla escolha) e " +
-                         "\"gabarito\" (contendo apenas a resposta correta esperada, sem explicações). " +
+                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com três propriedades: " +
+                         "\"enunciado\" (somente o texto da pergunta, SEM as opções de resposta), " +
+                         instrucaoAlternativas +
+                         "\"gabarito\" (se for múltipla escolha, apenas a letra correta, como \"A\"; " +
+                         "caso contrário, a resposta esperada completa, sem explicações). " +
                          "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
 
             var respostaLlm = await _llmService.GerarRespostaAsync(prompt);
@@ -64,12 +71,20 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 throw new InvalidOperationException($"O LLM não retornou um JSON válido. Resposta original: {respostaLlm}", ex);
             }
 
+            if (tipoAtividade == TipoAtividade.MultiplaEscolha &&
+                (atividadeGerada.Alternativas == null || atividadeGerada.Alternativas.Count(a => !string.IsNullOrWhiteSpace(a)) < 2))
+            {
+                throw new InvalidOperationException(
+                    $"O LLM não retornou alternativas suficientes para uma atividade de múltipla escolha. Resposta original: {respostaLlm}");
+            }
+
             var novaAtividade = new Atividade(
                 nome: temaDesejado,
                 tipo: tipoAtividade,
-                conteudo: atividadeGerada.Conteudo,
+                conteudo: atividadeGerada.Enunciado,
                 gabarito: atividadeGerada.Gabarito,
-                idMateria: idMateria
+                idMateria: idMateria,
+                alternativas: atividadeGerada.Alternativas ?? new List<string>()
             );
 
             var atividadeCriada = await _atividadeRepository.AdicionarAsync(novaAtividade);
@@ -82,10 +97,11 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 atividadeCriada.Nome,
                 atividadeCriada.Tipo.ToString(),
                 atividadeCriada.Conteudo,
+                atividadeCriada.Alternativas,
                 atividadeCriada.Gabarito,
                 atividadeCriada.IdMateria);
         }
 
-        private record RespostaIaDto(string Conteudo, string Gabarito);
+        private record RespostaIaDto(string Enunciado, List<string>? Alternativas, string Gabarito);
     }
 }

@@ -1,0 +1,330 @@
+diff --git a/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeDto.cs b/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeDto.cs
+index 547eb14..5e250d2 100644
+--- a/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeDto.cs
++++ b/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeDto.cs
+@@ -9,6 +9,7 @@ namespace GameficandoEstudos.Application.DTOs
+         string Nome,
+         string Tipo,
+         string Conteudo,
++        List<string> Alternativas,
+         int IdMateria,
+         bool Ativa
+     );
+diff --git a/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeGeradaDto.cs b/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeGeradaDto.cs
+index 9e0e3ba..12a9cdd 100644
+--- a/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeGeradaDto.cs
++++ b/src/GameficandoEstudos.Application/DTOs/Atividade/AtividadeGeradaDto.cs
+@@ -1,4 +1,6 @@
+-﻿namespace GameficandoEstudos.Application.DTOs
++﻿using System.Collections.Generic;
++
++namespace GameficandoEstudos.Application.DTOs
+ {
+-    public record AtividadeGeradaDto(int Id, string Nome, string Tipo, string Conteudo, string Gabarito, int IdMateria);
+-}
+\ No newline at end of file
++    public record AtividadeGeradaDto(int Id, string Nome, string Tipo, string Conteudo, List<string> Alternativas, string Gabarito, int IdMateria);
++}
+diff --git a/src/GameficandoEstudos.Application/DTOs/Atividade/AtualizarAtividadeDto.cs b/src/GameficandoEstudos.Application/DTOs/Atividade/AtualizarAtividadeDto.cs
+index 56ab111..a3750e5 100644
+--- a/src/GameficandoEstudos.Application/DTOs/Atividade/AtualizarAtividadeDto.cs
++++ b/src/GameficandoEstudos.Application/DTOs/Atividade/AtualizarAtividadeDto.cs
+@@ -1,4 +1,5 @@
+-﻿using System.ComponentModel.DataAnnotations;
++﻿using System.Collections.Generic;
++using System.ComponentModel.DataAnnotations;
+ 
+ namespace GameficandoEstudos.Application.DTOs
+ {
+@@ -13,5 +14,8 @@ namespace GameficandoEstudos.Application.DTOs
+         string Conteudo,
+ 
+         [param: Required(ErrorMessage = "O gabarito da atividade é obrigatório.")]
+-        string Gabarito);
+-}
+\ No newline at end of file
++        string Gabarito,
++
++        // Opcional: só é usada/validada para atividades de múltipla escolha (ver Atividade.Atualizar).
++        List<string>? Alternativas = null);
++}
+diff --git a/src/GameficandoEstudos.Application/DTOs/SessaoPratica/QuestaoSessaoDto.cs b/src/GameficandoEstudos.Application/DTOs/SessaoPratica/QuestaoSessaoDto.cs
+index e84f484..871e5ab 100644
+--- a/src/GameficandoEstudos.Application/DTOs/SessaoPratica/QuestaoSessaoDto.cs
++++ b/src/GameficandoEstudos.Application/DTOs/SessaoPratica/QuestaoSessaoDto.cs
+@@ -1,6 +1,7 @@
+-﻿using GameficandoEstudos.Domain.Enums;
++﻿using System.Collections.Generic;
++using GameficandoEstudos.Domain.Enums;
+ 
+ namespace GameficandoEstudos.Application.DTOs
+ {
+-    public record QuestaoSessaoDto(int Id, string Nome, TipoAtividade Tipo, string Conteudo);
+-}
+\ No newline at end of file
++    public record QuestaoSessaoDto(int Id, string Nome, TipoAtividade Tipo, string Conteudo, List<string> Alternativas);
++}
+diff --git a/src/GameficandoEstudos.Application/Services/AtividadeService/AtualizarAtividadeService.cs b/src/GameficandoEstudos.Application/Services/AtividadeService/AtualizarAtividadeService.cs
+index 2b6900c..9312939 100644
+--- a/src/GameficandoEstudos.Application/Services/AtividadeService/AtualizarAtividadeService.cs
++++ b/src/GameficandoEstudos.Application/Services/AtividadeService/AtualizarAtividadeService.cs
+@@ -28,7 +28,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
+             if (materia == null || materia.IdProfessor != idProfessorLogado)
+                 throw new UnauthorizedAccessException("Você não tem permissão para alterar atividades de outros professores.");
+ 
+-            atividade.Atualizar(dto.Nome, dto.Conteudo, dto.Gabarito);
++            atividade.Atualizar(dto.Nome, dto.Conteudo, dto.Gabarito, dto.Alternativas);
+ 
+             await _atividadeRepository.AtualizarAsync(atividade);
+             await _auditoriaService.RegistrarAsync(idProfessorLogado, "Atividade.Atualizar", "Atividade", dto.Id.ToString());
+diff --git a/src/GameficandoEstudos.Application/Services/AtividadeService/GeradorAtividadeService.cs b/src/GameficandoEstudos.Application/Services/AtividadeService/GeradorAtividadeService.cs
+index d730957..eead1ff 100644
+--- a/src/GameficandoEstudos.Application/Services/AtividadeService/GeradorAtividadeService.cs
++++ b/src/GameficandoEstudos.Application/Services/AtividadeService/GeradorAtividadeService.cs
+@@ -3,6 +3,7 @@ using GameficandoEstudos.Application.Interfaces;
+ using GameficandoEstudos.Domain.Entities;
+ using GameficandoEstudos.Domain.Enums;
+ using System;
++using System.Collections.Generic;
+ using System.Linq;
+ using System.Text.Json;
+ using System.Threading.Tasks;
+@@ -43,11 +44,17 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
+             if (chunksRelevantes == null || !chunksRelevantes.Any())
+                 throw new InvalidOperationException("Nenhuma fonte encontrada para essa matéria e tema");
+ 
++            var instrucaoAlternativas = tipoAtividade == TipoAtividade.MultiplaEscolha
++                ? "\"alternativas\" (um array com EXATAMENTE 4 strings, cada uma sendo uma opção completa, ex.: \"A) Texto da opção\") e "
++                : "\"alternativas\" (um array vazio []) e ";
++
+             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
+                          $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
+-                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com duas propriedades: " +
+-                         "\"conteudo\" (contendo o enunciado da questão e as opções de A a D, se for múltipla escolha) e " +
+-                         "\"gabarito\" (contendo apenas a resposta correta esperada, sem explicações). " +
++                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com três propriedades: " +
++                         "\"enunciado\" (somente o texto da pergunta, SEM as opções de resposta), " +
++                         instrucaoAlternativas +
++                         "\"gabarito\" (se for múltipla escolha, apenas a letra correta, como \"A\"; " +
++                         "caso contrário, a resposta esperada completa, sem explicações). " +
+                          "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
+ 
+             var respostaLlm = await _llmService.GerarRespostaAsync(prompt);
+@@ -64,12 +71,20 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
+                 throw new InvalidOperationException($"O LLM não retornou um JSON válido. Resposta original: {respostaLlm}", ex);
+             }
+ 
++            if (tipoAtividade == TipoAtividade.MultiplaEscolha &&
++                (atividadeGerada.Alternativas == null || atividadeGerada.Alternativas.Count(a => !string.IsNullOrWhiteSpace(a)) < 2))
++            {
++                throw new InvalidOperationException(
++                    $"O LLM não retornou alternativas suficientes para uma atividade de múltipla escolha. Resposta original: {respostaLlm}");
++            }
++
+             var novaAtividade = new Atividade(
+                 nome: temaDesejado,
+                 tipo: tipoAtividade,
+-                conteudo: atividadeGerada.Conteudo,
++                conteudo: atividadeGerada.Enunciado,
+                 gabarito: atividadeGerada.Gabarito,
+-                idMateria: idMateria
++                idMateria: idMateria,
++                alternativas: atividadeGerada.Alternativas ?? new List<string>()
+             );
+ 
+             var atividadeCriada = await _atividadeRepository.AdicionarAsync(novaAtividade);
+@@ -82,10 +97,11 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
+                 atividadeCriada.Nome,
+                 atividadeCriada.Tipo.ToString(),
+                 atividadeCriada.Conteudo,
++                atividadeCriada.Alternativas,
+                 atividadeCriada.Gabarito,
+                 atividadeCriada.IdMateria);
+         }
+ 
+-        private record RespostaIaDto(string Conteudo, string Gabarito);
++        private record RespostaIaDto(string Enunciado, List<string>? Alternativas, string Gabarito);
+     }
+ }
+\ No newline at end of file
+diff --git a/src/GameficandoEstudos.Application/Services/AtividadeService/ListarAtividadesDaMateriaService.cs b/src/GameficandoEstudos.Application/Services/AtividadeService/ListarAtividadesDaMateriaService.cs
+index 8cd2fd1..5d69dd9 100644
+--- a/src/GameficandoEstudos.Application/Services/AtividadeService/ListarAtividadesDaMateriaService.cs
++++ b/src/GameficandoEstudos.Application/Services/AtividadeService/ListarAtividadesDaMateriaService.cs
+@@ -31,6 +31,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
+                 a.Nome,
+                 a.Tipo.ToString(),
+                 a.Conteudo,
++                a.Alternativas,
+                 a.IdMateria,
+                 a.Ativa
+             ));
+diff --git a/src/GameficandoEstudos.Application/Services/SessaoPraticaService/IniciarSessaoPraticaService.cs b/src/GameficandoEstudos.Application/Services/SessaoPraticaService/IniciarSessaoPraticaService.cs
+index 8bdf1b8..99b3ee1 100644
+--- a/src/GameficandoEstudos.Application/Services/SessaoPraticaService/IniciarSessaoPraticaService.cs
++++ b/src/GameficandoEstudos.Application/Services/SessaoPraticaService/IniciarSessaoPraticaService.cs
+@@ -50,7 +50,7 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
+ 
+             return new SessaoPraticaIniciadaDto(
+                 sessao.Id,
+-                questoes.Select(q => new QuestaoSessaoDto(q.Id, q.Nome, q.Tipo, q.Conteudo)).ToList());
++                questoes.Select(q => new QuestaoSessaoDto(q.Id, q.Nome, q.Tipo, q.Conteudo, q.Alternativas)).ToList());
+         }
+     }
+ }
+\ No newline at end of file
+diff --git a/src/GameficandoEstudos.Domain/Entities/Atividade.cs b/src/GameficandoEstudos.Domain/Entities/Atividade.cs
+index 01d5edf..647f363 100644
+--- a/src/GameficandoEstudos.Domain/Entities/Atividade.cs
++++ b/src/GameficandoEstudos.Domain/Entities/Atividade.cs
+@@ -1,5 +1,7 @@
+ ﻿using GameficandoEstudos.Domain.Enums;
+ using System;
++using System.Collections.Generic;
++using System.Linq;
+ 
+ namespace GameficandoEstudos.Domain.Entities
+ {
+@@ -8,7 +10,19 @@ namespace GameficandoEstudos.Domain.Entities
+         public int Id { get; private set; }
+         public string Nome { get; private set; }
+         public TipoAtividade Tipo { get; private set; }
++
++        /// <summary>
++        /// Apenas o enunciado da questão. As opções (quando houver) ficam em <see cref="Alternativas"/>,
++        /// para que o cliente não precise reinterpretar uma string única com regex.
++        /// </summary>
+         public string Conteudo { get; private set; }
++
++        /// <summary>
++        /// Opções de resposta, uma por item (ex.: "A) Texto da opção"). Só é preenchida quando
++        /// <see cref="Tipo"/> é <see cref="TipoAtividade.MultiplaEscolha"/>; para os demais tipos fica vazia.
++        /// </summary>
++        public List<string> Alternativas { get; private set; } = new();
++
+         public string Gabarito { get; private set; }
+         public int IdMateria { get; private set; }
+         public DateTime CriadoEm { get; private set; }
+@@ -19,7 +33,7 @@ namespace GameficandoEstudos.Domain.Entities
+         public Materia Materia { get; private set; }
+ 
+         private Atividade() { }
+-        public Atividade(string nome, TipoAtividade tipo, string conteudo, string gabarito, int idMateria)
++        public Atividade(string nome, TipoAtividade tipo, string conteudo, string gabarito, int idMateria, IEnumerable<string>? alternativas = null)
+         {
+             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));
+             ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
+@@ -31,9 +45,12 @@ namespace GameficandoEstudos.Domain.Entities
+             if (idMateria <= 0)
+                 throw new ArgumentException("Id da matéria inválido.", nameof(idMateria));
+ 
++            var alternativasValidadas = ValidarAlternativas(tipo, alternativas);
++
+             Nome = nome;
+             Tipo = tipo;
+             Conteudo = conteudo;
++            Alternativas = alternativasValidadas;
+             Gabarito = gabarito;
+             IdMateria = idMateria;
+             CriadoEm = DateTime.UtcNow;
+@@ -47,7 +64,7 @@ namespace GameficandoEstudos.Domain.Entities
+             Ativa = false;
+             AtualizadoEm = DateTime.UtcNow;
+         }
+-        public void Atualizar(string nome, string conteudo, string gabarito)
++        public void Atualizar(string nome, string conteudo, string gabarito, IEnumerable<string>? alternativas = null)
+         {
+             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));
+             ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
+@@ -55,8 +72,30 @@ namespace GameficandoEstudos.Domain.Entities
+ 
+             Nome = nome;
+             Conteudo = conteudo;
++            // alternativas == null significa "não informado nesta chamada": preserva as alternativas atuais
++            // em vez de apagá-las, para não quebrar clientes antigos que ainda não enviam esse campo.
++            if (alternativas != null)
++                Alternativas = ValidarAlternativas(Tipo, alternativas);
+             Gabarito = gabarito;
+             AtualizadoEm = DateTime.UtcNow;
+         }
++
++        private static List<string> ValidarAlternativas(TipoAtividade tipo, IEnumerable<string>? alternativas)
++        {
++            // alternativas == null significa "não informado" (ex.: chamadas antigas/testes que não lidam
++            // com alternativas). Nesse caso não validamos quantidade — quem efetivamente gera ou edita o
++            // conteúdo de uma atividade de múltipla escolha (GeradorAtividadeService, AtualizarAtividadeService)
++            // sempre passa a lista, então a validação abaixo é o que protege o dado real.
++            if (alternativas == null)
++                return new List<string>();
++
++            var lista = alternativas.Where(a => !string.IsNullOrWhiteSpace(a)).ToList();
++
++            if (tipo == TipoAtividade.MultiplaEscolha && lista.Count < 2)
++                throw new ArgumentException(
++                    "Atividades de múltipla escolha precisam de pelo menos duas alternativas.", nameof(alternativas));
++
++            return lista;
++        }
+     }
+ }
+\ No newline at end of file
+diff --git a/src/GameficandoEstudos.Infrastructure/Data/AppDbContext.cs b/src/GameficandoEstudos.Infrastructure/Data/AppDbContext.cs
+index 9455d0d..9c29f1a 100644
+--- a/src/GameficandoEstudos.Infrastructure/Data/AppDbContext.cs
++++ b/src/GameficandoEstudos.Infrastructure/Data/AppDbContext.cs
+@@ -60,6 +60,7 @@ namespace GameficandoEstudos.Infrastructure.Data
+                 b.HasKey(a => a.Id);
+                 b.Property(a => a.Nome).IsRequired().HasMaxLength(150);
+                 b.Property(a => a.Conteudo).IsRequired();
++                b.Property(a => a.Alternativas).HasColumnType("text[]");
+                 b.Property(a => a.Gabarito).IsRequired();
+ 
+                 b.HasOne(a => a.Materia)
+diff --git a/src/GameficandoEstudos.Infrastructure/Services/FakeServices/FakeLlmService.cs b/src/GameficandoEstudos.Infrastructure/Services/FakeServices/FakeLlmService.cs
+index 36554a8..3f8f63d 100644
+--- a/src/GameficandoEstudos.Infrastructure/Services/FakeServices/FakeLlmService.cs
++++ b/src/GameficandoEstudos.Infrastructure/Services/FakeServices/FakeLlmService.cs
+@@ -8,7 +8,9 @@ namespace GameficandoEstudos.Infrastructure.Services.FakeServices
+     {
+         public Task<string> GerarRespostaAsync(string prompt)
+         {
+-            string jsonFake = "{\"Conteudo\": \"Pergunta gerada por IA (Modo Fake).\\nA) Opção Correta\\nB) Opção Errada\", \"Gabarito\": \"A\"}";
++            string jsonFake = "{\"Enunciado\": \"Pergunta gerada por IA (Modo Fake).\", " +
++                               "\"Alternativas\": [\"A) Opção Correta\", \"B) Opção Errada\"], " +
++                               "\"Gabarito\": \"A\"}";
+             return Task.FromResult(jsonFake);
+         }
+ 
+diff --git a/tests/GameficandoEstudos.Application.Tests/AtividadeServiceTests/GeradorAtividadeServiceTests.cs b/tests/GameficandoEstudos.Application.Tests/AtividadeServiceTests/GeradorAtividadeServiceTests.cs
+index 68ebf8e..9bc3ceb 100644
+--- a/tests/GameficandoEstudos.Application.Tests/AtividadeServiceTests/GeradorAtividadeServiceTests.cs
++++ b/tests/GameficandoEstudos.Application.Tests/AtividadeServiceTests/GeradorAtividadeServiceTests.cs
+@@ -37,7 +37,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
+ 
+             mockLlmService
+                 .Setup(ia => ia.GerarRespostaAsync(It.IsAny<string>()))
+-                .ReturnsAsync("{ \"conteudo\": \"O que é RAM?\", \"gabarito\": \"Memória volátil\" }");
++                .ReturnsAsync("{ \"enunciado\": \"O que é RAM?\", \"alternativas\": [\"A) Memória volátil\", \"B) Memória permanente\"], \"gabarito\": \"A\" }");
+ 
+             atividadeRepositoryMock
+                 .Setup(repo => repo.AdicionarAsync(It.IsAny<Atividade>()))
+@@ -50,14 +50,16 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
+             var resultado = await service.GerarAtividadeAsync(idMateriaFake, temaFake, tipoAtividade, idProfessorLogado);
+ 
+             resultado.Conteudo.Should().Be("O que é RAM?");
+-            resultado.Gabarito.Should().Be("Memória volátil");
++            resultado.Alternativas.Should().BeEquivalentTo(new[] { "A) Memória volátil", "B) Memória permanente" });
++            resultado.Gabarito.Should().Be("A");
+             resultado.Tipo.Should().Be("MultiplaEscolha");
+             resultado.IdMateria.Should().Be(idMateriaFake);
+ 
+             atividadeRepositoryMock.Verify(repo => repo.AdicionarAsync(It.Is<Atividade>(a =>
+                 a.Conteudo == "O que é RAM?" &&
+-                a.Gabarito == "Memória volátil" &&
+-                a.Tipo == TipoAtividade.MultiplaEscolha
++                a.Gabarito == "A" &&
++                a.Tipo == TipoAtividade.MultiplaEscolha &&
++                a.Alternativas.Count == 2
+             )), Times.Once);
+ 
+             auditoriaServiceMock.Verify(a => a.RegistrarAsync(

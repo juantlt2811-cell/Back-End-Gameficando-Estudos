@@ -9,6 +9,7 @@ namespace GameficandoEstudos.Application.DTOs
         string Nome,
         string Tipo,
         string Conteudo,
+        List<string> Alternativas,
         int IdMateria,
         bool Ativa
     );
