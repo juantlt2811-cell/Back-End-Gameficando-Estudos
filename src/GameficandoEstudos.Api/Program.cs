@@ -122,8 +122,8 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<IEmailService, FakeEmailService>();
 else
     builder.Services.AddScoped<IEmailService, SmtpEmailService>();
-builder.Services.AddHttpClient<ILlmService, LlmService>()
-    .AddResilienceHandler("llm-pipeline", pipeline =>
+builder.Services.AddHttpClient("groq")
+    .AddResilienceHandler("groq-pipeline", pipeline =>
     {
         pipeline.AddRetry(new HttpRetryStrategyOptions
         {
@@ -142,6 +142,21 @@ builder.Services.AddHttpClient<ILlmService, LlmService>()
 
         pipeline.AddTimeout(TimeSpan.FromSeconds(15));
     });
+
+builder.Services.AddHttpClient("gemini")
+    .AddResilienceHandler("gemini-pipeline", pipeline =>
+    {
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 2,
+            BackoffType = DelayBackoffType.Exponential,
+            Delay = TimeSpan.FromMilliseconds(500)
+        });
+
+        pipeline.AddTimeout(TimeSpan.FromSeconds(10));
+    });
+
+builder.Services.AddScoped<ILlmService, LlmService>();
 var app = builder.Build();
 app.UseExceptionHandler(app2 =>
 {
