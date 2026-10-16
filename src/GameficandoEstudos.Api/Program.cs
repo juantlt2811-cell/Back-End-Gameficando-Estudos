@@ -10,8 +10,10 @@ using GameficandoEstudos.Infrastructure.Services;
 using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using Polly;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -120,7 +122,26 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<IEmailService, FakeEmailService>();
 else
     builder.Services.AddScoped<IEmailService, SmtpEmailService>();
-builder.Services.AddHttpClient<ILlmService, LlmService>();
+builder.Services.AddHttpClient<ILlmService, LlmService>()
+    .AddResilienceHandler("llm-pipeline", pipeline =>
+    {
+        pipeline.AddRetry(new HttpRetryStrategyOptions
+        {
+            MaxRetryAttempts = 2,
+            BackoffType = DelayBackoffType.Exponential,
+            Delay = TimeSpan.FromSeconds(1)
+        });
+
+        pipeline.AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+        {
+            FailureRatio = 0.5,
+            SamplingDuration = TimeSpan.FromSeconds(30),
+            MinimumThroughput = 5,
+            BreakDuration = TimeSpan.FromSeconds(30)
+        });
+
+        pipeline.AddTimeout(TimeSpan.FromSeconds(15));
+    });
 var app = builder.Build();
 app.UseExceptionHandler(app2 =>
 {
