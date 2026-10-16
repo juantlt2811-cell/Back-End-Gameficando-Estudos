@@ -49,17 +49,13 @@ public class LlmService : ILlmService
 
     public async Task<float[]> GerarEmbeddingsAsync(string texto)
     {
+        const int dimensaoEsperada = 768;
+
         var requestBody = new
         {
             model = "models/gemini-embedding-001",
-            content = new
-            {
-                parts = new[] { new { text = texto } }
-            },
-            embedContentConfig = new
-            {
-                outputDimensionality = 768 // mantem compatibilidade com a coluna vector(768) ja existente
-            }
+            content = new { parts = new[] { new { text = texto } } },
+            embedContentConfig = new { outputDimensionality = dimensaoEsperada }
         };
 
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={_embeddingsApiKey}";
@@ -73,12 +69,21 @@ public class LlmService : ILlmService
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
 
-        return jsonDocument.RootElement
+        var valores = jsonDocument.RootElement
             .GetProperty("embedding")
             .GetProperty("values")
             .EnumerateArray()
             .Select(x => x.GetSingle())
             .ToArray();
+
+        if (valores.Length > dimensaoEsperada)
+            valores = valores.Take(dimensaoEsperada).ToArray();
+
+        if (valores.Length != dimensaoEsperada)
+            throw new InvalidOperationException(
+                $"O modelo de embeddings retornou {valores.Length} dimensões, esperado {dimensaoEsperada}.");
+
+        return valores;
     }
 
     public async Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string enunciado, string respostaAluno, string gabaritoEsperado)
