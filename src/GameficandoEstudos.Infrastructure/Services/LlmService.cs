@@ -9,6 +9,8 @@ namespace GameficandoEstudos.Infrastructure.Services;
 
 public class LlmService : ILlmService
 {
+    private const string ModeloGroq = "openai/gpt-oss-20b";
+
     private readonly HttpClient _httpClient;
     private readonly string _groqApiKey;
     private readonly string _embeddingsApiKey;
@@ -21,23 +23,31 @@ public class LlmService : ILlmService
         _embeddingsApiKey = configuration["LlmApi:EmbeddingsKey"] ?? throw new ArgumentNullException("EmbeddingsKey não configurada");
     }
 
-    public async Task<string> GerarRespostaAsync(string prompt)
+    private async Task<string> ChamarGroqAsync(object requestBody)
     {
-        var requestBody = new
-        {
-            model = "llama3-8b-8192", 
-            messages = new[] { new { role = "user", content = prompt } },
-            temperature = 0.7
-        };
-
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _groqApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
         var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
         var responseString = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Erro ao chamar o Groq ({(int)response.StatusCode}): {responseString}");
+
+        return responseString;
+    }
+
+    public async Task<string> GerarRespostaAsync(string prompt)
+    {
+        var requestBody = new
+        {
+            model = ModeloGroq,
+            messages = new[] { new { role = "user", content = prompt } },
+            temperature = 0.7
+        };
+
+        var responseString = await ChamarGroqAsync(requestBody);
         using var jsonDocument = JsonDocument.Parse(responseString);
 
         return jsonDocument.RootElement
@@ -102,20 +112,13 @@ public class LlmService : ILlmService
 
         var requestBody = new
         {
-            model = "llama3-8b-8192",
+            model = ModeloGroq,
             messages = new[] { new { role = "user", content = prompt } },
-            temperature = 0.2, 
-            response_format = new { type = "json_object" } 
+            temperature = 0.2,
+            response_format = new { type = "json_object" }
         };
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _groqApiKey);
-        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-
-        var responseString = await response.Content.ReadAsStringAsync();
+        var responseString = await ChamarGroqAsync(requestBody);
         using var jsonDocument = JsonDocument.Parse(responseString);
 
         var jsonContent = jsonDocument.RootElement
