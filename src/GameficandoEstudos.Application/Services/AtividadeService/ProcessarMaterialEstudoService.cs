@@ -11,13 +11,20 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         private readonly IMateriaRepository _materiaRepository;
         private readonly ICaixaFontesRepository _caixaFontesRepository;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IDivisorDeTextoService _divisorDeTextoService;
 
-        public ProcessarMaterialEstudoService(ILlmService llmService, IMateriaRepository materiaRepository, ICaixaFontesRepository caixaFontesRepository, IAuditoriaService auditoriaService)
+        public ProcessarMaterialEstudoService(
+            ILlmService llmService, 
+            IMateriaRepository materiaRepository, 
+            ICaixaFontesRepository caixaFontesRepository, 
+            IAuditoriaService auditoriaService, 
+            IDivisorDeTextoService divisorDeTextoService)
         {
             _llmService = llmService;
             _materiaRepository = materiaRepository;
             _caixaFontesRepository = caixaFontesRepository;
             _auditoriaService = auditoriaService;
+            _divisorDeTextoService = divisorDeTextoService;
         }
 
         public async Task ProcessarTextoAsync(int idMateria, string tituloMaterial, string textoCompleto, int idProfessorLogado)
@@ -37,21 +44,19 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             }
             Guid documentoId = Guid.NewGuid();
 
-            var paragrafos = textoCompleto.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+            var trechos = _divisorDeTextoService.Dividir(textoCompleto);
 
-            foreach (var paragrafo in paragrafos)
+            var novosChunks = new List<FonteChunks>();
+
+            foreach (var trecho in trechos)
             {
-                if (string.IsNullOrWhiteSpace(paragrafo) || paragrafo.Length < 10)
-                    continue;
+                var embeddings = await _llmService.GerarEmbeddingsAsync(trecho);
 
-                var paragrafoAtual = await _llmService.GerarEmbeddingsAsync(paragrafo);
-
-                var chunk = new FonteChunks(paragrafo, caixa.Id, paragrafoAtual, tituloMaterial, documentoId);
-
-                caixa.AdicionarChunk(chunk);
+                novosChunks.Add(new FonteChunks(trecho, caixa.Id, embeddings, tituloMaterial, documentoId));
             }
 
-            await _caixaFontesRepository.AtualizarAsync(caixa);
+            if (novosChunks.Count > 0)
+                await _caixaFontesRepository.AdicionarChunksAsync(novosChunks);
 
             await _auditoriaService.RegistrarAsync(
                 idProfessorLogado, "CaixaFontes.AdicionarMaterial", "Materia", idMateria.ToString(), $"Origem: {tituloMaterial}");

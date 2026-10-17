@@ -1,91 +1,91 @@
-﻿using FluentAssertions;
-using Moq;
-using System;
-using System.Threading.Tasks;
-using Xunit;
-using GameficandoEstudos.Application.DTOs;
-using GameficandoEstudos.Application.Interfaces;
-using GameficandoEstudos.Application.Services.AtividadeService;
-using GameficandoEstudos.Domain.Entities;
-using GameficandoEstudos.Domain.Enums;
+﻿    using FluentAssertions;
+    using Moq;
+    using System;
+    using System.Threading.Tasks;
+    using Xunit;
+    using GameficandoEstudos.Application.DTOs;
+    using GameficandoEstudos.Application.Interfaces;
+    using GameficandoEstudos.Application.Services.AtividadeService;
+    using GameficandoEstudos.Domain.Entities;
+    using GameficandoEstudos.Domain.Enums;
 
-namespace GameficandoEstudos.Tests.Services.AtividadeService
-{
-    public class AtualizarAtividadeServiceTests
+    namespace GameficandoEstudos.Tests.Services.AtividadeService
     {
-        private readonly Mock<IAtividadeRepository> _atividadeRepositoryMock;
-        private readonly Mock<IMateriaRepository> _materiaRepositoryMock;
-        private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
-        private readonly AtualizarAtividadeService _service;
-
-        public AtualizarAtividadeServiceTests()
+        public class AtualizarAtividadeServiceTests
         {
-            _atividadeRepositoryMock = new Mock<IAtividadeRepository>();
-            _materiaRepositoryMock = new Mock<IMateriaRepository>();
-            _auditoriaServiceMock = new Mock<IAuditoriaService>();
-            _service = new AtualizarAtividadeService(
-                _atividadeRepositoryMock.Object, _materiaRepositoryMock.Object, _auditoriaServiceMock.Object);
-        }
+            private readonly Mock<IAtividadeRepository> _atividadeRepositoryMock;
+            private readonly Mock<IMateriaRepository> _materiaRepositoryMock;
+            private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
+            private readonly AtualizarAtividadeService _service;
 
-        [Fact]
-        public async Task ExecutarAsync_QuandoDadosForemValidos_DeveAtualizarAtividadeNoBanco()
-        {
-            var professorLogadoId = 1;
-            var atividade = new Atividade("Tema Antigo", TipoAtividade.MultiplaEscolha, "A) 1", "A", 10);
-            var materia = new Materia("Matemática", 40, "Fácil", professorLogadoId);
-            var dto = new AtualizarAtividadeDto(1, "Novo Tema", "Nova Pergunta", "B");
+            public AtualizarAtividadeServiceTests()
+            {
+                _atividadeRepositoryMock = new Mock<IAtividadeRepository>();
+                _materiaRepositoryMock = new Mock<IMateriaRepository>();
+                _auditoriaServiceMock = new Mock<IAuditoriaService>();
+                _service = new AtualizarAtividadeService(
+                    _atividadeRepositoryMock.Object, _materiaRepositoryMock.Object, _auditoriaServiceMock.Object);
+            }
 
-            _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
-            _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
+            [Fact]
+            public async Task ExecutarAsync_QuandoDadosForemValidos_DeveAtualizarAtividadeNoBanco()
+            {
+                var professorLogadoId = 1;
+                var atividade = new Atividade("Tema Antigo", TipoAtividade.MultiplaEscolha, "A) 1", "A", 10);
+                var materia = new Materia("Matemática", 40, "Fácil", professorLogadoId);
+                var dto = new AtualizarAtividadeDto(1, "Novo Tema", "Nova Pergunta", "B");
 
-            await _service.ExecutarAsync(dto, professorLogadoId);
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
+                _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
 
-            atividade.Nome.Should().Be("Novo Tema");
-            atividade.Conteudo.Should().Be("Nova Pergunta");
-            atividade.Gabarito.Should().Be("B");
+                await _service.ExecutarAsync(dto, professorLogadoId);
 
-            _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(atividade), Times.Once);
-            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
-                professorLogadoId, "Atividade.Atualizar", "Atividade", dto.Id.ToString(), It.IsAny<string>()), Times.Once);
-        }
+                atividade.Nome.Should().Be("Novo Tema");
+                atividade.Conteudo.Should().Be("Nova Pergunta");
+                atividade.Gabarito.Should().Be("B");
 
-        [Fact]
-        public async Task ExecutarAsync_QuandoAtividadeNaoExistir_DeveLancarInvalidOperationException()
-        {
-            var dto = new AtualizarAtividadeDto(999, "Tema", "Conteúdo", "A");
+                _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(atividade), Times.Once);
+                _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                    professorLogadoId, "Atividade.Atualizar", "Atividade", dto.Id.ToString(), It.IsAny<string>()), Times.Once);
+            }
 
-            _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync((Atividade)null);
+            [Fact]
+            public async Task ExecutarAsync_QuandoAtividadeNaoExistir_DeveLancarInvalidOperationException()
+            {
+                var dto = new AtualizarAtividadeDto(999, "Tema", "Conteúdo", "A");
 
-            Func<Task> act = async () => await _service.ExecutarAsync(dto, 1);
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync((Atividade)null);
 
-            await act.Should().ThrowAsync<InvalidOperationException>()
-                     .WithMessage("Atividade não encontrada.");
+                Func<Task> act = async () => await _service.ExecutarAsync(dto, 1);
 
-            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
-                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        }
+                await act.Should().ThrowAsync<InvalidOperationException>()
+                         .WithMessage("Atividade não encontrada.");
 
-        [Fact]
-        public async Task ExecutarAsync_QuandoProfessorTentarAtualizarAtividadeDeOutro_DeveLancarUnauthorizedAccessException()
-        {
-            var dto = new AtualizarAtividadeDto(1, "Tema", "Conteúdo", "A");
-            var professorInvasorId = 1;
-            var professorDonoId = 2;
+                _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                    It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            }
 
-            var atividade = new Atividade("Tema", TipoAtividade.Dissertativa, "Pergunta", "Resposta", 10);
-            var materia = new Materia("História", 60, "Média", professorDonoId);
+            [Fact]
+            public async Task ExecutarAsync_QuandoProfessorTentarAtualizarAtividadeDeOutro_DeveLancarUnauthorizedAccessException()
+            {
+                var dto = new AtualizarAtividadeDto(1, "Tema", "Conteúdo", "A");
+                var professorInvasorId = 1;
+                var professorDonoId = 2;
 
-            _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
-            _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
+                var atividade = new Atividade("Tema", TipoAtividade.Dissertativa, "Pergunta", "Resposta", 10);
+                var materia = new Materia("História", 60, "Média", professorDonoId);
 
-            Func<Task> act = async () => await _service.ExecutarAsync(dto, professorInvasorId);
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
+                _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
 
-            await act.Should().ThrowAsync<UnauthorizedAccessException>()
-                     .WithMessage("Você não tem permissão para alterar atividades de outros professores.");
+                Func<Task> act = async () => await _service.ExecutarAsync(dto, professorInvasorId);
 
-            _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
-            _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
-                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+                await act.Should().ThrowAsync<UnauthorizedAccessException>()
+                         .WithMessage("Você não tem permissão para alterar atividades de outros professores.");
+
+                _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
+                _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                    It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            }
         }
     }
-}

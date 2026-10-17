@@ -32,8 +32,13 @@ public class CaixaFontesRepository : ICaixaFontesRepository
     public async Task<CaixaFontes> ObterPorMateriaAsync(int idMateria)
     {
         return (await _context.CaixaFontes
-            .Include(c => c.Chunks)
             .FirstOrDefaultAsync(c => c.IdMateria == idMateria))!;
+    }
+
+    public async Task AdicionarChunksAsync(IEnumerable<FonteChunks> chunks)
+    {
+        await _context.FonteChunks.AddRangeAsync(chunks);
+        await _context.SaveChangesAsync();
     }
 
     public async Task<CaixaFontes> AtualizarAsync(CaixaFontes caixaFontes)

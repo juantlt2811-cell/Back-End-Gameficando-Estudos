@@ -2,6 +2,7 @@
 using DocumentFormat.OpenXml.Packaging;
 using GameficandoEstudos.Application.Interfaces;
 using UglyToad.PdfPig;
+using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace GameficandoEstudos.Infrastructure.Services;
 
@@ -49,7 +50,16 @@ public class ExtratorDeTextoService : IExtratorDeTextoService
     private static string ExtrairDeDocx(Stream conteudo)
     {
         using var documento = WordprocessingDocument.Open(conteudo, isEditable: false);
+
         var corpo = documento.MainDocumentPart?.Document.Body;
-        return corpo?.InnerText ?? string.Empty;
+        if (corpo is null)
+            return string.Empty;
+
+        var paragrafos = corpo
+            .Descendants<Paragraph>()
+            .Select(p => p.InnerText)
+            .Where(texto => !string.IsNullOrWhiteSpace(texto));
+
+        return string.Join("\n\n", paragrafos);
     }
 }
