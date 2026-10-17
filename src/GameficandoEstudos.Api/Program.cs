@@ -17,6 +17,7 @@ using Polly;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,8 +66,18 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<PoliticaSenhaValidator>();
-builder.Services.AddMemoryCache();
+
+
+builder.Services.AddMemoryCache(options =>
+{
+    options.SizeLimit = 10_000;
+});
+
+
 builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
+
+
+
 var applicationAssembly = typeof(CriarMateriaService).Assembly;
 
 var servicosApp = applicationAssembly.GetTypes()
@@ -89,6 +100,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         x => x.UseVector() 
     ));
 
+var jwtChaveSecreta = builder.Configuration["Jwt:ChaveSecreta"];
+if (string.IsNullOrWhiteSpace(jwtChaveSecreta))
+    throw new InvalidOperationException("Configuração 'Jwt:ChaveSecreta' não foi definida.");
+
+if (Encoding.UTF8.GetByteCount(jwtChaveSecreta) < 32)
+    throw new InvalidOperationException(
+        "Configuração 'Jwt:ChaveSecreta' precisa ter pelo menos 32 bytes para uso com HmacSha256.");
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -99,12 +118,12 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidateAudience = false, 
+        ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Emissor"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:ChaveSecreta"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtChaveSecreta)),
+        ClockSkew = TimeSpan.Zero
     };
 });
 
@@ -158,6 +177,15 @@ builder.Services.AddHttpClient("gemini")
 
 builder.Services.AddScoped<ILlmService, LlmService>();
 var app = builder.Build();
+
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseExceptionHandler(app2 =>
 {
     app2.Run(async context =>

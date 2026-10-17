@@ -24,7 +24,12 @@ namespace GameficandoEstudos.Infrastructure.Security
         {
             var chave = Chave(email);
             var tentativasAtuais = _cache.TryGetValue(chave, out int valor) ? valor : 0;
-            _cache.Set(chave, tentativasAtuais + 1, JanelaBloqueio);
+
+            _cache.Set(chave, tentativasAtuais + 1, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = JanelaBloqueio,
+                Size = 1
+            });
         }
 
         public void RegistrarSucesso(string email) =>

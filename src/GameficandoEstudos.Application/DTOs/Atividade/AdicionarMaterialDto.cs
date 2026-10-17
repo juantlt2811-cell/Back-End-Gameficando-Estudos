@@ -11,5 +11,6 @@ namespace GameficandoEstudos.Application.DTOs
         string TituloMaterial,
 
         [param: Required(ErrorMessage = "O texto do material não pode ser vazio.")]
+        [param: MaxLength(500_000, ErrorMessage = "O texto do material excede o tamanho máximo permitido (500.000 caracteres).")]
         string TextoCompleto);
 }

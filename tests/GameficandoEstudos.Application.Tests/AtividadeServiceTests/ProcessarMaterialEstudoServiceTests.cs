@@ -1,13 +1,13 @@
 ﻿using FluentAssertions;
-using GameficandoEstudos.Application.Interfaces;
-using GameficandoEstudos.Application.Services.AtividadeService;
-using GameficandoEstudos.Domain.Entities;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Application.Services.AtividadeService;
+using GameficandoEstudos.Domain.Entities;
 
 namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 {
@@ -53,6 +53,23 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             _divisorDeTextoServiceMock.Verify(d => d.Dividir(It.IsAny<string>()), Times.Never);
             _caixaFontesRepositoryMock.Verify(r => r.AdicionarChunksAsync(It.IsAny<IEnumerable<FonteChunks>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessarTextoAsync_QuandoTextoExcedeTamanhoMaximo_DeveLancarExcecaoSemConsultarRepositorio()
+        {
+            var idMateria = 1;
+            var idProfessor = 1;
+            var textoGigante = new string('a', 500_001);
+
+            Func<Task> act = async () =>
+                await _service.ProcessarTextoAsync(idMateria, "Livro Teste", textoGigante, idProfessor);
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                     .WithMessage("O texto do material excede o tamanho máximo permitido (500.000 caracteres).");
+
+            _materiaRepositoryMock.Verify(r => r.ObterPorIdAsync(It.IsAny<int>()), Times.Never);
+            _divisorDeTextoServiceMock.Verify(d => d.Dividir(It.IsAny<string>()), Times.Never);
         }
 
         [Fact]

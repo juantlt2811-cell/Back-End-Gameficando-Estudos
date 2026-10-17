@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
@@ -7,6 +8,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
 {
     public class ProcessarMaterialEstudoService
     {
+        private const int TamanhoMaximoTextoCaracteres = 500_000;
+
         private readonly ILlmService _llmService;
         private readonly IMateriaRepository _materiaRepository;
         private readonly ICaixaFontesRepository _caixaFontesRepository;
@@ -14,10 +17,10 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         private readonly IDivisorDeTextoService _divisorDeTextoService;
 
         public ProcessarMaterialEstudoService(
-            ILlmService llmService, 
-            IMateriaRepository materiaRepository, 
-            ICaixaFontesRepository caixaFontesRepository, 
-            IAuditoriaService auditoriaService, 
+            ILlmService llmService,
+            IMateriaRepository materiaRepository,
+            ICaixaFontesRepository caixaFontesRepository,
+            IAuditoriaService auditoriaService,
             IDivisorDeTextoService divisorDeTextoService)
         {
             _llmService = llmService;
@@ -29,6 +32,10 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
 
         public async Task ProcessarTextoAsync(int idMateria, string tituloMaterial, string textoCompleto, int idProfessorLogado)
         {
+            if (textoCompleto.Length > TamanhoMaximoTextoCaracteres)
+                throw new InvalidOperationException(
+                    $"O texto do material excede o tamanho máximo permitido ({TamanhoMaximoTextoCaracteres:N0} caracteres).");
+
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)
                 throw new InvalidOperationException("Matéria não encontrada.");

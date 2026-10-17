@@ -10,9 +10,9 @@ namespace GameficandoEstudos.Infrastructure.Security
     {
         private const int SaltSize = 16;
         private const int HashSize = 32;
-        private const int Parallelism = 4;
-        private const int Iterations = 3;
-        private const int MemoryKB = 65536;
+        private const int Parallelism = 1;
+        private const int Iterations = 2;
+        private const int MemoryKB = 19456;
 
         public string HashPassword(string senhaPlana)
         {
