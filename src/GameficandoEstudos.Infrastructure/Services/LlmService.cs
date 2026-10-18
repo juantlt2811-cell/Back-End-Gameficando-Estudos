@@ -106,14 +106,18 @@ public class LlmService : ILlmService
     public async Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string enunciado, string respostaAluno, string gabaritoEsperado, TipoAtividade tipo)
     {
         var instrucaoAvaliacao = tipo == TipoAtividade.Codigo
-            ? "Atue como um revisor de código pragmático, não como um gabarito exato. O único critério é se o código, " +
-              "ao ser executado, produz o comportamento pedido no enunciado. Aceite QUALQUER abordagem válida: nomes de " +
-              "variável diferentes, estilo de escrita diferente, estrutura diferente (ex.: if/else vs. outra forma " +
-              "equivalente), textos de mensagens com redação diferente da do gabarito, desde que o sentido e a saída " +
-              "pedida estejam corretos. O gabarito é apenas UMA referência de solução possível, não a única certa — " +
-              "NÃO reprove só porque a implementação do aluno é diferente da do gabarito, somente se o código estiver " +
-              "incorreto, incompleto ou não atender ao que o enunciado pede."
-              : "Atue como um professor rigoroso quanto ao CONCEITO, mas flexível quanto à FORMA. Aprove se a ideia " +
+        ? "Atue como um revisor de código pragmático, não como um gabarito exato. O único critério é se o código, " +
+          "ao ser executado, produz o comportamento pedido no enunciado. Aceite QUALQUER abordagem válida: nomes de " +
+          "variável diferentes, estilo de escrita diferente, estrutura diferente (ex.: if/else vs. outra forma " +
+          "equivalente), textos de mensagens com redação diferente da do gabarito, desde que o sentido e a saída " +
+          "pedida estejam corretos. O gabarito é apenas UMA referência de solução possível, não a única certa — " +
+          "NÃO reprove só porque a implementação do aluno é diferente da do gabarito, somente se o código estiver " +
+          "incorreto, incompleto ou não atender ao que o enunciado pede. Diferenças puramente estéticas na SAÍDA " +
+          "do programa — pontuação extra (como um \"!\"), maiúsculas/minúsculas, espaçamento, acentuação ou " +
+          "pequenas variações de formatação do texto impresso — NÃO reduzem a nota em hipótese alguma e devem " +
+          "receber nota 100, a menos que o enunciado tenha exigido explicitamente esse formato exato de saída. " +
+          "Só penalize a saída se ela estiver semanticamente diferente do que foi pedido, nunca por capricho de formatação."
+      : "Atue como um professor rigoroso quanto ao CONCEITO, mas flexível quanto à FORMA. Aprove se a ideia " +
               "central da resposta estiver certa e demonstrar entendimento real do conteúdo pedido no enunciado. " +
               "Se o enunciado ou o gabarito mencionam exemplos, analogias ou trechos de código específicos, trate-os " +
               "apenas como ILUSTRAÇÃO de como a resposta poderia ser — NÃO exija que o aluno use exatamente os mesmos " +
