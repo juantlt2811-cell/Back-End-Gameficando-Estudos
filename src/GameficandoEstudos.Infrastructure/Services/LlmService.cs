@@ -5,6 +5,7 @@ using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Enums;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Http;
 
 namespace GameficandoEstudos.Infrastructure.Services;
 
@@ -12,13 +13,13 @@ public class LlmService : ILlmService
 {
     private const string ModeloGroq = "openai/gpt-oss-20b";
 
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly string _groqApiKey;
     private readonly string _embeddingsApiKey;
 
-    public LlmService(HttpClient httpClient, IConfiguration configuration)
+    public LlmService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
 
         _groqApiKey = configuration["LlmApi:GroqKey"] ?? throw new ArgumentNullException("GroqKey não configurada");
         _embeddingsApiKey = configuration["LlmApi:EmbeddingsKey"] ?? throw new ArgumentNullException("EmbeddingsKey não configurada");
@@ -26,11 +27,13 @@ public class LlmService : ILlmService
 
     private async Task<string> ChamarGroqAsync(object requestBody)
     {
+        var httpClient = _httpClientFactory.CreateClient("groq");
+
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _groqApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await httpClient.SendAsync(request);
         var responseString = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -69,12 +72,15 @@ public class LlmService : ILlmService
             embedContentConfig = new { outputDimensionality = dimensaoEsperada }
         };
 
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={_embeddingsApiKey}";
+        var httpClient = _httpClientFactory.CreateClient("gemini");
+
+        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Add("x-goog-api-key", _embeddingsApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.SendAsync(request);
+        var response = await httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
 
         var responseString = await response.Content.ReadAsStringAsync();
@@ -162,7 +168,6 @@ public class LlmService : ILlmService
         if (resultado == null)
             return new ResultadoAvaliacaoDto(0, "Ocorreu um erro ao contactar a IA para avaliação. Por favor, tente novamente.");
 
-        
         var pontuacaoSegura = Math.Clamp(resultado.Pontuacao, 0, 100);
         return resultado with { Pontuacao = pontuacaoSegura };
     }
