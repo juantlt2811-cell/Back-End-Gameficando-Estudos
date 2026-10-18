@@ -1,5 +1,6 @@
 ﻿using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Domain.Enums;
 using System.Threading.Tasks;
 
 namespace GameficandoEstudos.Infrastructure.Services.FakeServices
@@ -19,14 +20,14 @@ namespace GameficandoEstudos.Infrastructure.Services.FakeServices
             return Task.FromResult(new float[] { 0.15f, 0.82f, 0.33f, 0.45f });
         }
 
-        public Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string conteudo, string respostaAluno, string gabarito)
+        public Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string conteudo, string respostaAluno, string gabarito, TipoAtividade tipo)
         {
-            bool aprovado = respostaAluno.Length > 5;
-            string feedback = aprovado
+            int pontuacao = respostaAluno.Length > 5 ? 100 : 30;
+            string feedback = pontuacao >= ResultadoAvaliacaoDto.LimiarAprovacao
                 ? "IA (Fake): A sua resposta está excelente e alinhada com o conteúdo!"
                 : "IA (Fake): Resposta muito incompleta.";
 
-            return Task.FromResult(new ResultadoAvaliacaoDto(aprovado, feedback));
+            return Task.FromResult(new ResultadoAvaliacaoDto(pontuacao, feedback));
         }
     }
 }

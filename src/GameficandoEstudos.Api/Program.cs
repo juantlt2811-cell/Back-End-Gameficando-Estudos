@@ -1,5 +1,6 @@
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Interfaces.Security;
+using GameficandoEstudos.Application.Services.AtividadeService;
 using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using GameficandoEstudos.Application.Validacoes;
@@ -9,6 +10,7 @@ using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
 using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
@@ -17,7 +19,6 @@ using Polly;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Microsoft.AspNetCore.HttpOverrides;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -137,6 +138,8 @@ builder.Services.AddScoped<IRankingRepository, RankingRepository>();
 builder.Services.AddScoped<IExtratorDeTextoService, ExtratorDeTextoService>();
 builder.Services.AddScoped<IAuditoriaService, AuditoriaService>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddSingleton(new DivisorDeTextoOptions());
+builder.Services.AddScoped<IDivisorDeTextoService, DivisorDeTextoService>();
 if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<IEmailService, FakeEmailService>();
 else

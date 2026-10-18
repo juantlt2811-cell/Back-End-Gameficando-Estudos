@@ -76,10 +76,10 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 2);
             sessao.RegistrarTentativa(new TentativaResposta(
                 idSessaoPratica: 1, idAtividade: 1, idUsuario: 1, idMateria: 10,
-                respostaAluno: "A", acertou: true, feedback: "Correto!"));
+                respostaAluno: "A", pontuacao: 100, feedback: "Correto!"));
             sessao.RegistrarTentativa(new TentativaResposta(
                 idSessaoPratica: 1, idAtividade: 2, idUsuario: 1, idMateria: 10,
-                respostaAluno: "B", acertou: false, feedback: "Incorreto."));
+                respostaAluno: "B", pontuacao: 0, feedback: "Incorreto."));
 
             var aluno = new Usuario("Aluno Teste", "aluno@teste.com", "senha123", TipoUsuario.Aluno);
 
@@ -93,6 +93,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             resumo.TotalRespondidas.Should().Be(2);
             resumo.TotalAcertos.Should().Be(1);
             resumo.PercentualAcerto.Should().Be(50);
+            resumo.NotaMedia.Should().Be(50);
             resumo.OfensivaAtual.Should().Be(1);
 
             aluno.Gamificacao!.AtividadesFeitasHoje.Should().Be(1);

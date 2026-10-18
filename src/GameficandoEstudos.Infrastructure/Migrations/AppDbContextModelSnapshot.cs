@@ -318,6 +318,9 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.Property<int>("IdUsuario")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Pontuacao")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("RespondidoEm")
                         .HasColumnType("timestamp with time zone");
 

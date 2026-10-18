@@ -77,7 +77,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
             var sessao = new SessaoPratica(idUsuario: 2, idMateria: 10, totalQuestoes: 2);
             sessao.RegistrarTentativa(new TentativaResposta(
                 idSessaoPratica: 1, idAtividade: 1, idUsuario: 2, idMateria: 10,
-                respostaAluno: "A", acertou: true, feedback: "Correto!"));
+                respostaAluno: "A", pontuacao: 100, feedback: "Correto!"));
 
             usuarioRepoMock.Setup(r => r.ObterPorIdAsync(2)).ReturnsAsync(aluno);
             sessaoRepoMock.Setup(r => r.ListarPorUsuarioAsync(2)).ReturnsAsync(new List<SessaoPratica> { sessao });

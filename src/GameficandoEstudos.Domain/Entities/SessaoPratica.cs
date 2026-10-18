@@ -64,5 +64,9 @@ namespace GameficandoEstudos.Domain.Entities
 
         public double PercentualAcerto =>
             _tentativas.Count == 0 ? 0 : (double)TotalAcertos / _tentativas.Count * 100;
+
+        
+        public double NotaMedia =>
+            _tentativas.Count == 0 ? 0 : _tentativas.Average(t => t.Pontuacao);
     }
 }

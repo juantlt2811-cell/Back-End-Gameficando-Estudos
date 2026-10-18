@@ -34,7 +34,7 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             await _usuarioRepository.AtualizarAsync(usuario);
 
             return new SessaoPraticaResumoDto(
-                sessao.Tentativas.Count, sessao.TotalAcertos, sessao.PercentualAcerto, usuario.Gamificacao.OfensivaAtual);
+                sessao.Tentativas.Count, sessao.TotalAcertos, sessao.PercentualAcerto, sessao.NotaMedia, usuario.Gamificacao.OfensivaAtual);
         }
     }
 }

@@ -112,7 +112,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             sessao.TotalAcertos.Should().Be(1);
 
             llmServiceMock.Verify(
-                l => l.AvaliarRespostaAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+                l => l.AvaliarRespostaAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TipoAtividade>()), Times.Never);
             sessaoRepoMock.Verify(r => r.AtualizarAsync(sessao), Times.Once);
         }
 
@@ -129,8 +129,8 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
             atividadeRepoMock.Setup(r => r.ObterPorIdAsync(5)).ReturnsAsync(atividade);
             llmServiceMock
-                .Setup(l => l.AvaliarRespostaAsync(atividade.Conteudo, "Uma estrutura de repeticao", atividade.Gabarito))
-                .ReturnsAsync(new ResultadoAvaliacaoDto(true, "Correto!"));
+                .Setup(l => l.AvaliarRespostaAsync(atividade.Conteudo, "Uma estrutura de repeticao", atividade.Gabarito, atividade.Tipo))
+                .ReturnsAsync(new ResultadoAvaliacaoDto(100, "Correto!"));
 
             var service = new ResponderSessaoPraticaService(
                 sessaoRepoMock.Object, atividadeRepoMock.Object, llmServiceMock.Object);
@@ -140,7 +140,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             resultado.Aprovado.Should().BeTrue();
             sessao.Tentativas.Should().HaveCount(1);
             llmServiceMock.Verify(
-                l => l.AvaliarRespostaAsync(atividade.Conteudo, "Uma estrutura de repeticao", atividade.Gabarito), Times.Once);
+                 l => l.AvaliarRespostaAsync(atividade.Conteudo, "Uma estrutura de repeticao", atividade.Gabarito, atividade.Tipo), Times.Once);
         }
 
         [Fact]

@@ -49,8 +49,25 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 ? "\"alternativas\" (um array com EXATAMENTE 4 strings, cada uma sendo uma opção completa, ex.: \"A) Texto da opção\") e "
                 : "\"alternativas\" (um array vazio []) e ";
 
+            var instrucaoTipo = tipoAtividade switch
+            {
+                TipoAtividade.Dissertativa =>
+                    "O enunciado deve pedir uma resposta CONCEITUAL/TEÓRICA, em texto corrido — explicar, comparar, " +
+                    "justificar ou interpretar algo sobre o tema. NÃO peça para o aluno escrever, completar ou " +
+                    "corrigir código, nem peça \"um programa\" ou \"um exemplo prático em código\" — isso é " +
+                    "responsabilidade exclusiva de uma atividade do tipo Código, não desta. Se quiser usar exemplos, " +
+                    "eles devem vir apenas como contexto da própria pergunta (ex.: trechos de código já prontos pra " +
+                    "o aluno analisar/explicar), nunca como algo que o aluno precise escrever. ",
+                TipoAtividade.Codigo =>
+                    "O enunciado deve pedir explicitamente para o aluno ESCREVER um trecho de código que resolva o " +
+                    "problema descrito, deixando claro a linguagem (ou permitindo que o aluno escolha, se não for " +
+                    "relevante) e o comportamento esperado. ",
+                _ => string.Empty
+            };
+
             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
                          $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
+                         instrucaoTipo +
                          "Formate a resposta EXCLUSIVAMENTE como um JSON válido com três propriedades: " +
                          "\"enunciado\" (somente o texto da pergunta, SEM as opções de resposta), " +
                          instrucaoAlternativas +

@@ -103,20 +103,20 @@ namespace GameficandoEstudos.Tests.Services.AtividadeService
 
             var atividade = new Atividade("Tema", TipoAtividade.Dissertativa, "Explique DDD", "Domain Driven Design...", 10);
             var materia = new Materia("Software", 40, "Média", professorId);
-            var respostaAvaliacaoIa = new ResultadoAvaliacaoDto(true, "Boa explicação");
+            var respostaAvaliacaoIa = new ResultadoAvaliacaoDto(100, "Boa explicação");
 
             _usuarioRepositoryMock.Setup(r => r.ObterPorIdAsync(professorId)).ReturnsAsync(professor);
             _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(1)).ReturnsAsync(atividade);
             _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
 
-            _llmServiceMock.Setup(l => l.AvaliarRespostaAsync(atividade.Conteudo, "Minha resposta", atividade.Gabarito))
-                           .ReturnsAsync(respostaAvaliacaoIa);
+            _llmServiceMock.Setup(l => l.AvaliarRespostaAsync(atividade.Conteudo, "Minha resposta", atividade.Gabarito, atividade.Tipo))
+               .ReturnsAsync(respostaAvaliacaoIa);
 
             var resultado = await _service.ExecutarAsync(professorId, 1, "Minha resposta");
 
             resultado.Aprovado.Should().BeTrue();
             resultado.Feedback.Should().Be("[MODO TESTE] Boa explicação");
-            _llmServiceMock.Verify(l => l.AvaliarRespostaAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            _llmServiceMock.Verify(l => l.AvaliarRespostaAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TipoAtividade>()), Times.Once);
         }
 
         private Usuario CriarUsuarioFake(TipoUsuario tipo, int id = 1)

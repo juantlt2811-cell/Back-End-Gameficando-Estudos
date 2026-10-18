@@ -3,8 +3,8 @@ using System.Text;
 using System.Text.Json;
 using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Interfaces;
+using GameficandoEstudos.Domain.Enums;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Http;
 
 namespace GameficandoEstudos.Infrastructure.Services;
 
@@ -12,13 +12,13 @@ public class LlmService : ILlmService
 {
     private const string ModeloGroq = "openai/gpt-oss-20b";
 
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
     private readonly string _groqApiKey;
     private readonly string _embeddingsApiKey;
 
-    public LlmService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public LlmService(HttpClient httpClient, IConfiguration configuration)
     {
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClient;
 
         _groqApiKey = configuration["LlmApi:GroqKey"] ?? throw new ArgumentNullException("GroqKey não configurada");
         _embeddingsApiKey = configuration["LlmApi:EmbeddingsKey"] ?? throw new ArgumentNullException("EmbeddingsKey não configurada");
@@ -26,13 +26,11 @@ public class LlmService : ILlmService
 
     private async Task<string> ChamarGroqAsync(object requestBody)
     {
-        var httpClient = _httpClientFactory.CreateClient("groq");
-
         using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.groq.com/openai/v1/chat/completions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _groqApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request);
         var responseString = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
@@ -71,17 +69,13 @@ public class LlmService : ILlmService
             embedContentConfig = new { outputDimensionality = dimensaoEsperada }
         };
 
-        var httpClient = _httpClientFactory.CreateClient("gemini");
-
-        var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent";
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key={_embeddingsApiKey}";
 
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Add("x-goog-api-key", _embeddingsApiKey);
         request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var response = await httpClient.SendAsync(request);
+        var response = await _httpClient.SendAsync(request);
         response.EnsureSuccessStatusCode();
-
 
         var responseString = await response.Content.ReadAsStringAsync();
         using var jsonDocument = JsonDocument.Parse(responseString);
@@ -103,18 +97,44 @@ public class LlmService : ILlmService
         return valores;
     }
 
-    public async Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string enunciado, string respostaAluno, string gabaritoEsperado)
+    public async Task<ResultadoAvaliacaoDto> AvaliarRespostaAsync(string enunciado, string respostaAluno, string gabaritoEsperado, TipoAtividade tipo)
     {
+        var instrucaoAvaliacao = tipo == TipoAtividade.Codigo
+            ? "Atue como um revisor de código pragmático, não como um gabarito exato. O único critério é se o código, " +
+              "ao ser executado, produz o comportamento pedido no enunciado. Aceite QUALQUER abordagem válida: nomes de " +
+              "variável diferentes, estilo de escrita diferente, estrutura diferente (ex.: if/else vs. outra forma " +
+              "equivalente), textos de mensagens com redação diferente da do gabarito, desde que o sentido e a saída " +
+              "pedida estejam corretos. O gabarito é apenas UMA referência de solução possível, não a única certa — " +
+              "NÃO reprove só porque a implementação do aluno é diferente da do gabarito, somente se o código estiver " +
+              "incorreto, incompleto ou não atender ao que o enunciado pede."
+              : "Atue como um professor rigoroso quanto ao CONCEITO, mas flexível quanto à FORMA. Aprove se a ideia " +
+              "central da resposta estiver certa e demonstrar entendimento real do conteúdo pedido no enunciado. " +
+              "Se o enunciado ou o gabarito mencionam exemplos, analogias ou trechos de código específicos, trate-os " +
+              "apenas como ILUSTRAÇÃO de como a resposta poderia ser — NÃO exija que o aluno use exatamente os mesmos " +
+              "exemplos: um exemplo diferente, mas que ilustre corretamente o mesmo conceito, deve ser aceito " +
+              "normalmente. Reprove apenas por erro conceitual, não por divergência de exemplo escolhido.";
+
         var prompt = $@"
-            Atue como um professor rigoroso. Avalie a resposta do aluno com base no gabarito.
-    
+            {instrucaoAvaliacao}
+
             Enunciado: {enunciado}
-            Gabarito Esperado: {gabaritoEsperado}
+            Gabarito (uma referência de solução possível): {gabaritoEsperado}
             Resposta do Aluno: {respostaAluno}
 
+            Avalie a resposta com uma NOTA de 0 a 100, permitindo crédito parcial — nem toda resposta
+            imperfeita é um erro total. Use estas faixas como referência:
+            - 90 a 100: resposta completa e correta, sem ressalvas relevantes.
+            - 70 a 89: ideia central correta, pode faltar um detalhe secundário, um exemplo ou mais
+              profundidade, mas demonstra entendimento real do que foi pedido. NÃO é erro conceitual.
+            - 40 a 69: entendimento parcial — acerta parte do conceito, mas comete um engano relevante,
+              deixa uma lacuna importante ou é incompleta de forma que compromete a resposta.
+            - 0 a 39: não demonstra entendimento do que foi pedido, ou está incorreta/incoerente com o enunciado.
+            A ausência de um exemplo, por si só, nunca deve zerar a nota ou ser tratada como erro
+            conceitual — na pior das hipóteses, justifica ficar na faixa de 70 a 89.
+
             Devolva a resposta EXCLUSIVAMENTE em formato JSON com as seguintes propriedades exatas:
-            - ""aprovado"": boolean (true se a ideia central estiver certa e demonstrar entendimento, false se estiver errada).
-            - ""feedback"": texto curto e direto justificando a avaliação.
+            - ""pontuacao"": número inteiro de 0 a 100, conforme os critérios acima.
+            - ""feedback"": texto curto e direto justificando a nota.
         ";
 
         var requestBody = new
@@ -139,6 +159,11 @@ public class LlmService : ILlmService
             PropertyNameCaseInsensitive = true
         });
 
-        return resultado ?? new ResultadoAvaliacaoDto(false, "Ocorreu um erro ao contactar a IA para avaliação. Por favor, tente novamente.");
+        if (resultado == null)
+            return new ResultadoAvaliacaoDto(0, "Ocorreu um erro ao contactar a IA para avaliação. Por favor, tente novamente.");
+
+        
+        var pontuacaoSegura = Math.Clamp(resultado.Pontuacao, 0, 100);
+        return resultado with { Pontuacao = pontuacaoSegura };
     }
 }

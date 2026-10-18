@@ -33,11 +33,17 @@ public class RankingRepository : IRankingRepository
     public async Task<List<RankingMateriaDto>> ObterRankingPorMateriaAsync(int idMateria, int limite, int minimoTentativas)
     {
         var agregados = await _context.TentativasResposta
-            .Where(t => t.IdMateria == idMateria)
-            .GroupBy(t => t.IdUsuario)
-            .Select(g => new { IdUsuario = g.Key, Total = g.Count(), Acertos = g.Count(t => t.Acertou) })
-            .Where(x => x.Total >= minimoTentativas)
-            .ToListAsync();
+    .Where(t => t.IdMateria == idMateria)
+    .GroupBy(t => t.IdUsuario)
+    .Select(g => new
+    {
+        IdUsuario = g.Key,
+        Total = g.Count(),
+        Acertos = g.Count(t => t.Acertou),
+        MediaPontuacao = g.Average(t => (double)t.Pontuacao)
+    })
+    .Where(x => x.Total >= minimoTentativas)
+    .ToListAsync();
 
         var idsUsuarios = agregados.Select(a => a.IdUsuario).ToList();
         var nomes = await _context.Usuarios
@@ -50,12 +56,13 @@ public class RankingRepository : IRankingRepository
                 Nome = nomes.GetValueOrDefault(a.IdUsuario, "Usuário removido"),
                 a.Total,
                 a.Acertos,
-                Percentual = (double)a.Acertos / a.Total * 100
+                a.MediaPontuacao
             })
-            .OrderByDescending(a => a.Percentual)
+            
+            .OrderByDescending(a => a.MediaPontuacao)
             .ThenByDescending(a => a.Total)
             .Take(limite)
-            .Select((a, indice) => new RankingMateriaDto(indice + 1, a.Nome, a.Total, a.Acertos, a.Percentual))
+            .Select((a, indice) => new RankingMateriaDto(indice + 1, a.Nome, a.Total, a.Acertos, a.MediaPontuacao))
             .ToList();
     }
 
@@ -64,7 +71,13 @@ public class RankingRepository : IRankingRepository
         var tentativasPorAluno = await _context.TentativasResposta
             .Where(t => t.IdMateria == idMateria)
             .GroupBy(t => t.IdUsuario)
-            .Select(g => new { IdUsuario = g.Key, Total = g.Count(), Acertos = g.Count(t => t.Acertou) })
+            .Select(g => new
+            {
+                IdUsuario = g.Key,
+                Total = g.Count(),
+                Acertos = g.Count(t => t.Acertou),
+                MediaPontuacao = g.Average(t => (double)t.Pontuacao)
+            })
             .ToListAsync();
 
         var sessoesPorAluno = await _context.SessoesPratica
@@ -83,7 +96,7 @@ public class RankingRepository : IRankingRepository
                 nomes.GetValueOrDefault(t.IdUsuario, "Usuário removido"),
                 sessoesPorAluno.FirstOrDefault(s => s.IdUsuario == t.IdUsuario)?.Sessoes ?? 0,
                 t.Total,
-                t.Total == 0 ? 0 : (double)t.Acertos / t.Total * 100))
+                t.MediaPontuacao))
             .OrderByDescending(e => e.SessoesConcluidas)
             .ToList();
     }

@@ -40,15 +40,15 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             if (atividade.Tipo == TipoAtividade.MultiplaEscolha)
             {
                 bool acertou = resposta.Trim().Equals(atividade.Gabarito.Trim(), StringComparison.OrdinalIgnoreCase);
-                resultado = new ResultadoAvaliacaoDto(acertou, acertou ? "Resposta correta!" : "Resposta incorreta.");
+                resultado = new ResultadoAvaliacaoDto(acertou ? 100 : 0, acertou ? "Resposta correta!" : "Resposta incorreta.");
             }
             else
             {
-                resultado = await _llmService.AvaliarRespostaAsync(atividade.Conteudo, resposta, atividade.Gabarito);
+                resultado = await _llmService.AvaliarRespostaAsync(atividade.Conteudo, resposta, atividade.Gabarito, atividade.Tipo);
             }
 
             var tentativa = new TentativaResposta(
-                sessao.Id, atividade.Id, idAluno, sessao.IdMateria, resposta, resultado.Aprovado, resultado.Feedback);
+                sessao.Id, atividade.Id, idAluno, sessao.IdMateria, resposta, resultado.Pontuacao, resultado.Feedback);
 
             sessao.RegistrarTentativa(tentativa);
             await _sessaoPraticaRepository.AtualizarAsync(sessao);

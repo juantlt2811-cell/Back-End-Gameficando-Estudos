@@ -49,12 +49,12 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             {
                 bool acertou = respostaTeste.Trim().Equals(atividade.Gabarito.Trim(), StringComparison.OrdinalIgnoreCase);
                 string feedback = acertou ? "[MODO TESTE] Resposta correta!" : "[MODO TESTE] Resposta incorreta.";
-                resultadoAvaliacao = new ResultadoAvaliacaoDto(acertou, feedback);
+                resultadoAvaliacao = new ResultadoAvaliacaoDto(acertou ? 100 : 0, feedback);
             }
             else
             {
-                resultadoAvaliacao = await _llmService.AvaliarRespostaAsync(atividade.Conteudo, respostaTeste, atividade.Gabarito);
-                resultadoAvaliacao = new ResultadoAvaliacaoDto(resultadoAvaliacao.Aprovado, $"[MODO TESTE] {resultadoAvaliacao.Feedback}");
+                resultadoAvaliacao = await _llmService.AvaliarRespostaAsync(atividade.Conteudo, respostaTeste, atividade.Gabarito, atividade.Tipo);
+                resultadoAvaliacao = new ResultadoAvaliacaoDto(resultadoAvaliacao.Pontuacao, $"[MODO TESTE] {resultadoAvaliacao.Feedback}");
             }
 
             return resultadoAvaliacao;
