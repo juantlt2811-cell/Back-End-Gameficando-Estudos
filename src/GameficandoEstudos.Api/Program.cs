@@ -67,6 +67,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<PoliticaSenhaValidator>();
+builder.Services.AddSingleton(new CadastroOptions(builder.Configuration["Cadastro:CodigoProfessor"]));
 
 
 builder.Services.AddMemoryCache(options =>
