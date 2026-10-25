@@ -215,9 +215,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
-app.UseRateLimiter();
 app.UseAuthentication(); 
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
