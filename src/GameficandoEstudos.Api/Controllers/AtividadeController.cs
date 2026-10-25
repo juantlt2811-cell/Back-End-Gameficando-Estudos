@@ -39,7 +39,8 @@ namespace GameficandoEstudos.Api.Controllers
         public async Task<IActionResult> ListarPorMateria(int idMateria)
         {
             var tipoUsuario = ObterTipoUsuarioAutenticado();
-            var atividades = await _listarAtividadesService.ExecutarAsync(idMateria, tipoUsuario);
+            var idUsuario = ObterUsuarioIdAutenticado();
+            var atividades = await _listarAtividadesService.ExecutarAsync(idMateria, tipoUsuario, idUsuario);
             return Ok(atividades);
         }
 

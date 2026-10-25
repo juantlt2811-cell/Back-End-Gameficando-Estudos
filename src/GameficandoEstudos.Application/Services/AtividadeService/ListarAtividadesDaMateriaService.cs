@@ -11,20 +11,31 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
     public class ListarAtividadesDaMateriaService
     {
         private readonly IAtividadeRepository _atividadeRepository;
+        private readonly IMateriaRepository _materiaRepository;
 
-        public ListarAtividadesDaMateriaService(IAtividadeRepository atividadeRepository)
+        public ListarAtividadesDaMateriaService(
+            IAtividadeRepository atividadeRepository,
+            IMateriaRepository materiaRepository)
         {
             _atividadeRepository = atividadeRepository;
+            _materiaRepository = materiaRepository;
         }
 
-        public async Task<IEnumerable<AtividadeDto>> ExecutarAsync(int idMateria, TipoUsuario tipoUsuarioLogado)
+        public async Task<IEnumerable<AtividadeDto>> ExecutarAsync(
+            int idMateria, TipoUsuario tipoUsuarioLogado, int idUsuarioLogado)
         {
+            var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
+            if (materia == null)
+                return Enumerable.Empty<AtividadeDto>();
+
+            var podeVerInativas =
+                tipoUsuarioLogado == TipoUsuario.Admin ||
+                (tipoUsuarioLogado == TipoUsuario.Professor && materia.IdProfessor == idUsuarioLogado);
+
             var atividades = await _atividadeRepository.ObterPorMateriaAsync(idMateria);
 
-            if (tipoUsuarioLogado == TipoUsuario.Aluno)
-            {
+            if (!podeVerInativas)
                 atividades = atividades.Where(a => a.Ativa);
-            }
 
             return atividades.Select(a => new AtividadeDto(
                 a.Id,
