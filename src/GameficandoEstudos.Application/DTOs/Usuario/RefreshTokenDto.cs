@@ -1,4 +1,9 @@
-﻿namespace GameficandoEstudos.Application.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace GameficandoEstudos.Application.DTOs
 {
-    public record RefreshTokenDto(string RefreshToken);
+    public record RefreshTokenDto(
+        [param: Required(ErrorMessage = "O refresh token é obrigatório.")]
+        [param: MaxLength(200, ErrorMessage = "Refresh token inválido.")]
+        string RefreshToken);
 }

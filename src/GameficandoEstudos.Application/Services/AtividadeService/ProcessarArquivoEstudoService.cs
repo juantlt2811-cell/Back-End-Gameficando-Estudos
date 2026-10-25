@@ -1,10 +1,13 @@
-﻿using GameficandoEstudos.Application.Interfaces;
+﻿using System.IO.Compression;
+using GameficandoEstudos.Application.Interfaces;
 
 namespace GameficandoEstudos.Application.Services.AtividadeService
 {
     public class ProcessarArquivoEstudoService
     {
-        private const long TamanhoMaximoBytes = 10 * 1024 * 1024; 
+        private const long TamanhoMaximoBytes = 10 * 1024 * 1024;
+        
+        private const long TamanhoMaximoDescompactadoBytes = 50L * 1024 * 1024;
 
         private static readonly HashSet<string> ExtensoesPermitidas = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -63,8 +66,34 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 await conteudo.ReadExactlyAsync(assinatura);
                 conteudo.Position = 0;
 
-                if (assinatura[0] != 0x50 || assinatura[1] != 0x4B) 
+                if (assinatura[0] != 0x50 || assinatura[1] != 0x4B)
                     throw new InvalidOperationException("O arquivo não é um DOCX válido.");
+
+                VerificarTamanhoDescompactado(conteudo);
+            }
+        }
+
+        private static void VerificarTamanhoDescompactado(Stream conteudo)
+        {
+            try
+            {
+                using var zip = new ZipArchive(conteudo, ZipArchiveMode.Read, leaveOpen: true);
+
+                long total = 0;
+                foreach (var entrada in zip.Entries)
+                {
+                    total += entrada.Length;
+                    if (total > TamanhoMaximoDescompactadoBytes)
+                        throw new InvalidOperationException("O arquivo DOCX descompactado é grande demais.");
+                }
+            }
+            catch (InvalidDataException)
+            {
+                throw new InvalidOperationException("O arquivo não é um DOCX válido.");
+            }
+            finally
+            {
+                conteudo.Position = 0;
             }
         }
     }

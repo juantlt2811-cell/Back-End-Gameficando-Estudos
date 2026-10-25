@@ -9,6 +9,7 @@ using Xunit;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Services.AtividadeService;
 using GameficandoEstudos.Domain.Entities;
+using System.IO.Compression;
 
 namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 {
@@ -183,6 +184,66 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             _extratorMock.Verify(e => e.ExtrairTextoAsync(It.IsAny<Stream>(), "apostila.pdf"), Times.Once);
             _caixaFontesRepositoryMock.Verify(r => r.AdicionarChunksAsync(It.IsAny<IEnumerable<FonteChunks>>()), Times.Once);
+        }
+        private static MemoryStream CriarDocxSimulado(long bytesDescompactados)
+        {
+            var saida = new MemoryStream();
+            using (var zip = new ZipArchive(saida, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var entrada = zip.CreateEntry("word/document.xml", CompressionLevel.Fastest);
+                using var conteudo = entrada.Open();
+                var bloco = new byte[1024 * 1024];
+                for (long escrito = 0; escrito < bytesDescompactados; escrito += bloco.Length)
+                    conteudo.Write(bloco, 0, bloco.Length);
+            }
+            saida.Position = 0;
+            return saida;
+        }
+
+        [Fact]
+        public async Task ExecutarAsync_QuandoDocxDescompactaParaTamanhoAbsurdo_DeveLancarSemChamarExtrator()
+        {
+            using var stream = CriarDocxSimulado(bytesDescompactados: 51L * 1024 * 1024);
+            stream.Length.Should().BeLessThan(10L * 1024 * 1024); 
+
+            Func<Task> act = async () =>
+                await _service.ExecutarAsync(1, "bomba.docx", stream, stream.Length, idProfessorLogado: 1);
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                     .WithMessage("O arquivo DOCX descompactado é grande demais.");
+
+            _extratorMock.Verify(e => e.ExtrairTextoAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecutarAsync_QuandoDocxTemAssinaturaMasNaoEhZipValido_DeveLancarSemChamarExtrator()
+        {
+            using var stream = new MemoryStream(new byte[] { 0x50, 0x4B, 0x00, 0x00, 0x01, 0x02, 0x03 });
+
+            Func<Task> act = async () =>
+                await _service.ExecutarAsync(1, "quebrado.docx", stream, stream.Length, idProfessorLogado: 1);
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                     .WithMessage("O arquivo não é um DOCX válido.");
+
+            _extratorMock.Verify(e => e.ExtrairTextoAsync(It.IsAny<Stream>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecutarAsync_QuandoDocxNormal_DevePassarPelaVerificacaoEChamarExtrator()
+        {
+            using var stream = CriarDocxSimulado(bytesDescompactados: 1024 * 1024);
+
+            _extratorMock
+                .Setup(e => e.ExtrairTextoAsync(It.IsAny<Stream>(), "aula.docx"))
+                .ReturnsAsync("Texto do documento com mais de dez caracteres.");
+
+            Func<Task> act = async () =>
+                await _service.ExecutarAsync(1, "aula.docx", stream, stream.Length, idProfessorLogado: 1);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Matéria não encontrada.");
+
+            _extratorMock.Verify(e => e.ExtrairTextoAsync(It.IsAny<Stream>(), "aula.docx"), Times.Once);
         }
     }
 }

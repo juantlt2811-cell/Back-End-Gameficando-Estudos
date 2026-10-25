@@ -22,6 +22,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 3 * 1024 * 1024);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
