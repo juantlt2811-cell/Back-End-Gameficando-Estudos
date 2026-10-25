@@ -47,7 +47,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -68,7 +68,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -90,7 +90,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -113,7 +113,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }

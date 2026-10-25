@@ -55,7 +55,7 @@ namespace GameficandoEstudos.Api.Controllers
 
                 return CreatedAtAction(nameof(BuscarPorId), new { id = idMateria }, new { Mensagem = "Matéria criada com sucesso!", Id = idMateria });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -75,7 +75,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message); 
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -95,7 +95,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -114,7 +114,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return NotFound(new { Erro = ex.Message });
             }

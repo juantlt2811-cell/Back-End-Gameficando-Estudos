@@ -39,7 +39,8 @@ public class LlmService : ILlmService
         var responseString = await response.Content.ReadAsStringAsync();
 
         if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Erro ao chamar o Groq ({(int)response.StatusCode}): {responseString}");
+            throw new HttpRequestException(
+                $"Erro ao chamar o Groq ({(int)response.StatusCode}): {responseString}", null, response.StatusCode);
 
         return responseString;
     }
