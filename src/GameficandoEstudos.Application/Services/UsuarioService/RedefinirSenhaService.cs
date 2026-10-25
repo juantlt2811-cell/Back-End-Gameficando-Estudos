@@ -11,15 +11,18 @@ namespace GameficandoEstudos.Application.Services.UsuarioService
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IPasswordService _passwordService;
         private readonly PoliticaSenhaValidator _politicaSenhaValidator;
+        private readonly IRefreshTokenRepository _refreshTokenRepository;
 
         public RedefinirSenhaService(
             IUsuarioRepository usuarioRepository,
             IPasswordService passwordService,
-            PoliticaSenhaValidator politicaSenhaValidator)
+            PoliticaSenhaValidator politicaSenhaValidator,
+            IRefreshTokenRepository refreshTokenRepository)
         {
             _usuarioRepository = usuarioRepository;
             _passwordService = passwordService;
             _politicaSenhaValidator = politicaSenhaValidator;
+            _refreshTokenRepository = refreshTokenRepository;
         }
 
         public async Task ExecutarAsync(RedefinirSenhaDto dto)
@@ -40,6 +43,8 @@ namespace GameficandoEstudos.Application.Services.UsuarioService
             usuario.LimparTokenRedefinicaoSenha();
 
             await _usuarioRepository.AtualizarAsync(usuario);
+
+            await _refreshTokenRepository.RevogarTodosPorUsuarioAsync(usuario.Id);
         }
     }
 }
