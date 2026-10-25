@@ -13,8 +13,6 @@ namespace GameficandoEstudos.Application.DTOs
         [param: Required(ErrorMessage = "A senha é obrigatória.")]
         [param: MinLength(8, ErrorMessage = "A senha deve ter no mínimo 8 caracteres.")]
         [param: MaxLength(128, ErrorMessage = "A senha deve ter no máximo 128 caracteres.")]
-        [param: RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$",
-            ErrorMessage = "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula e um número.")]
         string Senha,
         [param: MaxLength(200, ErrorMessage = "Código de professor inválido.")]
         string? CodigoProfessor = null);
