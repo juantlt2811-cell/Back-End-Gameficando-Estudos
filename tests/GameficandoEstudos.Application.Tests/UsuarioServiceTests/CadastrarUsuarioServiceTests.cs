@@ -100,15 +100,12 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
         }
 
 
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("   ")]
-        public async Task ExecutarAsync_SemCodigoDeProfessor_DeveCriarAluno(string? codigo)
+        [Fact]
+        public async Task ExecutarAsync_SemCodigoDeProfessor_DeveCriarAluno()
         {
             var (service, usuarioRepoMock, _) = CriarService();
 
-            var dto = new RegistrarUsuarioDto("Fulano", "fulano@email.com", "SenhaAbc123", codigo);
+            var dto = new RegistrarUsuarioDto("Fulano", "fulano@email.com", "SenhaAbc123", null);
 
             await service.ExecutarAsync(dto);
 
@@ -130,11 +127,12 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
                 u.Tipo == TipoUsuario.Professor)), Times.Once);
         }
 
-        [Theory]
         [InlineData("codigo-errado")]
         [InlineData("Admin")]
         [InlineData("3")]
         [InlineData("2")]
+        [InlineData("")]
+        [InlineData("   ")]
         public async Task ExecutarAsync_ComCodigoDeProfessorIncorreto_DeveRecusarSemCriarUsuario(string codigo)
         {
             var (service, usuarioRepoMock, passwordServiceMock) = CriarService();
