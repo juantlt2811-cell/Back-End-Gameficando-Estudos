@@ -117,9 +117,13 @@ public class LlmService : ILlmService
           "NÃO reprove só porque a implementação do aluno é diferente da do gabarito, somente se o código estiver " +
           "incorreto, incompleto ou não atender ao que o enunciado pede. Diferenças puramente estéticas na SAÍDA " +
           "do programa — pontuação extra (como um \"!\"), maiúsculas/minúsculas, espaçamento, acentuação ou " +
-          "pequenas variações de formatação do texto impresso — NÃO reduzem a nota em hipótese alguma e devem " +
-          "receber nota 100, a menos que o enunciado tenha exigido explicitamente esse formato exato de saída. " +
-          "Só penalize a saída se ela estiver semanticamente diferente do que foi pedido, nunca por capricho de formatação."
+          "pequenas variações de formatação do texto impresso — NÃO reduzem a nota em hipótese alguma, mesmo que " +
+          "o enunciado tenha mencionado ou citado entre aspas o texto esperado de passagem (isso normalmente é só " +
+          "um jeito de descrever o que a saída deve dizer, não uma exigência de formato exato). A única exceção é " +
+          "quando o enunciado ENFATIZA de forma explícita que o formato precisa ser exato (ex.: \"a saída deve ser " +
+          "EXATAMENTE\", \"sem nenhum caractere a mais ou a menos\", \"respeitando rigorosamente a pontuação\") — " +
+          "só nesse caso a diferença de formatação pode custar nota. Fora isso, avalie somente se a saída é " +
+          "semanticamente equivalente ao que foi pedido, nunca por capricho de formatação."
       : "Atue como um professor rigoroso quanto ao CONCEITO, mas flexível quanto à FORMA. Aprove se a ideia " +
               "central da resposta estiver certa e demonstrar entendimento real do conteúdo pedido no enunciado. " +
               "Se o enunciado ou o gabarito mencionam exemplos, analogias ou trechos de código específicos, trate-os " +
