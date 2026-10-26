@@ -14,97 +14,86 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
 {
     public class RedefinirSenhaServiceTests
     {
+        private readonly Mock<IUsuarioRepository> _usuarioRepoMock = new();
+        private readonly Mock<IPasswordService> _passwordServiceMock = new();
+        private readonly Mock<IRefreshTokenRepository> _refreshRepoMock = new();
+
+        private RedefinirSenhaService CriarService() => new(
+            _usuarioRepoMock.Object,
+            _passwordServiceMock.Object,
+            new PoliticaSenhaValidator(),
+            _refreshRepoMock.Object);
+
+        private void NaoDeveTerRevogadoSessoes() =>
+            _refreshRepoMock.Verify(r => r.RevogarTodosPorUsuarioAsync(It.IsAny<int>()), Times.Never);
+
         [Fact]
         public async Task ExecutarAsync_QuandoNovaSenhaNaoAtendePolitica_DeveLancarSemConsultarRepositorio()
         {
-            var usuarioRepoMock = new Mock<IUsuarioRepository>();
-            var passwordServiceMock = new Mock<IPasswordService>();
-            var politicaSenhaValidator = new PoliticaSenhaValidator();
-
             var dto = new RedefinirSenhaDto("usuario@email.com", "token_qualquer", "senhafraca");
 
-            var service = new RedefinirSenhaService(
-                usuarioRepoMock.Object, passwordServiceMock.Object, politicaSenhaValidator);
-
-            Func<Task> act = async () => await service.ExecutarAsync(dto);
+            Func<Task> act = async () => await CriarService().ExecutarAsync(dto);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("A senha não atende à política de segurança.");
 
-            usuarioRepoMock.Verify(repo => repo.ObterPorEmailAsync(It.IsAny<string>()), Times.Never);
+            _usuarioRepoMock.Verify(repo => repo.ObterPorEmailAsync(It.IsAny<string>()), Times.Never);
+            NaoDeveTerRevogadoSessoes();
         }
 
         [Fact]
         public async Task ExecutarAsync_QuandoUsuarioNaoExiste_DeveLancarComMensagemGenerica()
         {
-            var usuarioRepoMock = new Mock<IUsuarioRepository>();
-            var passwordServiceMock = new Mock<IPasswordService>();
-            var politicaSenhaValidator = new PoliticaSenhaValidator();
-
             var dto = new RedefinirSenhaDto("naoexiste@email.com", "token_qualquer", "SenhaAbc123");
+            _usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync((Usuario?)null);
 
-            usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync((Usuario?)null);
-
-            var service = new RedefinirSenhaService(
-                usuarioRepoMock.Object, passwordServiceMock.Object, politicaSenhaValidator);
-
-            Func<Task> act = async () => await service.ExecutarAsync(dto);
+            Func<Task> act = async () => await CriarService().ExecutarAsync(dto);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("Token inválido ou expirado.");
+
+            NaoDeveTerRevogadoSessoes();
         }
 
         [Fact]
         public async Task ExecutarAsync_QuandoTokenInvalidoOuExpirado_DeveLancarComMesmaMensagemGenerica()
         {
-            var usuarioRepoMock = new Mock<IUsuarioRepository>();
-            var passwordServiceMock = new Mock<IPasswordService>();
-            var politicaSenhaValidator = new PoliticaSenhaValidator();
-
             var dto = new RedefinirSenhaDto("usuario@email.com", "token_errado", "SenhaAbc123");
             var usuarioFake = new Usuario("Usuario Teste", dto.Email, "hash_senha_antiga", TipoUsuario.Aluno);
             usuarioFake.DefinirTokenRedefinicaoSenha(
                 TokenHashHelper.GerarHash("token_correto"), DateTime.UtcNow.AddHours(1));
 
-            usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
+            _usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
 
-            var service = new RedefinirSenhaService(
-                usuarioRepoMock.Object, passwordServiceMock.Object, politicaSenhaValidator);
-
-            Func<Task> act = async () => await service.ExecutarAsync(dto);
+            Func<Task> act = async () => await CriarService().ExecutarAsync(dto);
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("Token inválido ou expirado.");
 
-            passwordServiceMock.Verify(p => p.HashPassword(It.IsAny<string>()), Times.Never);
+            _passwordServiceMock.Verify(p => p.HashPassword(It.IsAny<string>()), Times.Never);
+            NaoDeveTerRevogadoSessoes();
         }
 
         [Fact]
-        public async Task ExecutarAsync_QuandoTokenValido_DeveAtualizarSenhaELimparToken()
+        public async Task ExecutarAsync_QuandoTokenValido_DeveAtualizarSenhaLimparTokenERevogarSessoes()
         {
-            var usuarioRepoMock = new Mock<IUsuarioRepository>();
-            var passwordServiceMock = new Mock<IPasswordService>();
-            var politicaSenhaValidator = new PoliticaSenhaValidator();
-
             const string tokenBruto = "token_correto";
             var dto = new RedefinirSenhaDto("usuario@email.com", tokenBruto, "SenhaNovaAbc1");
             var usuarioFake = new Usuario("Usuario Teste", dto.Email, "hash_senha_antiga", TipoUsuario.Aluno);
             usuarioFake.DefinirTokenRedefinicaoSenha(
                 TokenHashHelper.GerarHash(tokenBruto), DateTime.UtcNow.AddHours(1));
 
-            usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
-            passwordServiceMock.Setup(p => p.HashPassword(dto.NovaSenha)).Returns("$argon2id$v=19$hash_novo");
+            _usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
+            _passwordServiceMock.Setup(p => p.HashPassword(dto.NovaSenha)).Returns("$argon2id$v=19$hash_novo");
 
-            var service = new RedefinirSenhaService(
-                usuarioRepoMock.Object, passwordServiceMock.Object, politicaSenhaValidator);
-
-            await service.ExecutarAsync(dto);
+            await CriarService().ExecutarAsync(dto);
 
             usuarioFake.Senha.Should().Be("$argon2id$v=19$hash_novo");
             usuarioFake.TokenRedefinicaoSenhaHash.Should().BeNull();
             usuarioFake.TokenRedefinicaoSenhaExpiraEm.Should().BeNull();
 
-            usuarioRepoMock.Verify(repo => repo.AtualizarAsync(usuarioFake), Times.Once);
+            _usuarioRepoMock.Verify(repo => repo.AtualizarAsync(usuarioFake), Times.Once);
+            _refreshRepoMock.Verify(r => r.RevogarTodosPorUsuarioAsync(usuarioFake.Id), Times.Once);
         }
     }
 }

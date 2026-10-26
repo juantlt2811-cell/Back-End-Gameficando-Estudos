@@ -8,6 +8,11 @@ namespace GameficandoEstudos.Infrastructure.Services;
 
 public class ExtratorDeTextoService : IExtratorDeTextoService
 {
+    
+    private const int LimiteTextoCaracteres = 500_000;
+    private const string MensagemTextoMuitoLongo =
+        "O texto do material excede o tamanho máximo permitido (500.000 caracteres).";
+
     private static readonly HashSet<string> ExtensoesTexto = new(StringComparer.OrdinalIgnoreCase)
     {
         ".txt", ".md", ".csv", ".json", ".xml", ".yaml", ".yml", ".html", ".css", ".sql",
@@ -42,7 +47,12 @@ public class ExtratorDeTextoService : IExtratorDeTextoService
         var textoCompleto = new StringBuilder();
 
         foreach (var pagina in documento.GetPages())
+        {
             textoCompleto.AppendLine(pagina.Text);
+
+            if (textoCompleto.Length > LimiteTextoCaracteres)
+                throw new InvalidOperationException(MensagemTextoMuitoLongo);
+        }
 
         return textoCompleto.ToString();
     }
@@ -55,11 +65,21 @@ public class ExtratorDeTextoService : IExtratorDeTextoService
         if (corpo is null)
             return string.Empty;
 
-        var paragrafos = corpo
-            .Descendants<Paragraph>()
-            .Select(p => p.InnerText)
-            .Where(texto => !string.IsNullOrWhiteSpace(texto));
+        var texto = new StringBuilder();
+        foreach (var paragrafo in corpo.Descendants<Paragraph>())
+        {
+            var linha = paragrafo.InnerText;
+            if (string.IsNullOrWhiteSpace(linha))
+                continue;
 
-        return string.Join("\n\n", paragrafos);
+            if (texto.Length > 0)
+                texto.Append("\n\n");
+            texto.Append(linha);
+
+            if (texto.Length > LimiteTextoCaracteres)
+                throw new InvalidOperationException(MensagemTextoMuitoLongo);
+        }
+
+        return texto.ToString();
     }
 }

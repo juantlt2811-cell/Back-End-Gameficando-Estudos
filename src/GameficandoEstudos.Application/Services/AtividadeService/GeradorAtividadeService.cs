@@ -86,14 +86,14 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             }
             catch (JsonException ex)
             {
-                throw new InvalidOperationException($"O LLM não retornou um JSON válido. Resposta original: {respostaLlm}", ex);
+                throw new InvalidOperationException("O LLM não retornou um JSON válido. Tente gerar a atividade novamente.", ex);
             }
 
             if (tipoAtividade == TipoAtividade.MultiplaEscolha &&
                 (atividadeGerada.Alternativas == null || atividadeGerada.Alternativas.Count(a => !string.IsNullOrWhiteSpace(a)) < 2))
             {
                 throw new InvalidOperationException(
-                    $"O LLM não retornou alternativas suficientes para uma atividade de múltipla escolha. Resposta original: {respostaLlm}");
+                 "O LLM não retornou alternativas suficientes para uma atividade de múltipla escolha. Tente gerar a atividade novamente.");
             }
 
             var alternativasFinais = atividadeGerada.Alternativas ?? new List<string>();

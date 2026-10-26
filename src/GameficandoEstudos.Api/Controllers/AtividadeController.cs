@@ -39,7 +39,8 @@ namespace GameficandoEstudos.Api.Controllers
         public async Task<IActionResult> ListarPorMateria(int idMateria)
         {
             var tipoUsuario = ObterTipoUsuarioAutenticado();
-            var atividades = await _listarAtividadesService.ExecutarAsync(idMateria, tipoUsuario);
+            var idUsuario = ObterUsuarioIdAutenticado();
+            var atividades = await _listarAtividadesService.ExecutarAsync(idMateria, tipoUsuario, idUsuario);
             return Ok(atividades);
         }
 
@@ -60,7 +61,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -80,7 +81,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -100,7 +101,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }
@@ -122,7 +123,7 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 return Proibido(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (EhErroDeNegocio(ex))
             {
                 return BadRequest(new { Erro = ex.Message });
             }

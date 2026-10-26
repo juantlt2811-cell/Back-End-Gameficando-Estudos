@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using Microsoft.AspNetCore;
 using Polly;
 using System.Linq;
 using System.Reflection;
@@ -22,6 +23,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 3 * 1024 * 1024);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -67,6 +69,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<PoliticaSenhaValidator>();
+builder.Services.AddSingleton(new CadastroOptions(builder.Configuration["Cadastro:CodigoProfessor"]));
 
 
 builder.Services.AddMemoryCache(options =>
@@ -193,12 +196,30 @@ app.UseExceptionHandler(app2 =>
 {
     app2.Run(async context =>
     {
-        var exceptionHandler = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var erro = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>()?.Error;
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogError(exceptionHandler?.Error, "Erro nao tratado");
+
+        context.Response.ContentType = "application/json";
+
+        
+        if (erro is Microsoft.AspNetCore.Http.BadHttpRequestException requisicaoInvalida)
+        {
+            logger.LogWarning("Requisição rejeitada ({Status}): {Mensagem}",
+                requisicaoInvalida.StatusCode, requisicaoInvalida.Message);
+
+            context.Response.StatusCode = requisicaoInvalida.StatusCode;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                Erro = requisicaoInvalida.StatusCode == StatusCodes.Status413PayloadTooLarge
+                    ? "O conteúdo enviado é grande demais."
+                    : "Requisição inválida."
+            });
+            return;
+        }
+
+        logger.LogError(erro, "Erro nao tratado");
 
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-        context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(new { Erro = "Ocorreu um erro inesperado. Tente novamente mais tarde." });
     });
 });
@@ -214,9 +235,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("FrontendDev");
-app.UseRateLimiter();
 app.UseAuthentication(); 
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

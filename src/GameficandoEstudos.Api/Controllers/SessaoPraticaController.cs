@@ -54,7 +54,7 @@ namespace GameficandoEstudos.Api.Controllers
                 return Ok(resultado);
             }
             catch (UnauthorizedAccessException ex) { return Proibido(ex.Message); }
-            catch (Exception ex) { return BadRequest(new { Erro = ex.Message }); }
+            catch (Exception ex) when (EhErroDeNegocio(ex)) { return BadRequest(new { Erro = ex.Message }); }
         }
 
         [HttpPost("{idSessao}/concluir")]
