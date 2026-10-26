@@ -52,17 +52,16 @@ namespace GameficandoEstudos.Application.Services.UsuarioService
 
         private TipoUsuario DefinirTipoUsuario(string? codigoInformado)
         {
-            if (string.IsNullOrWhiteSpace(codigoInformado))
+            if (codigoInformado is null)
                 return TipoUsuario.Aluno;
 
-            
             if (string.IsNullOrWhiteSpace(_opcoes.CodigoProfessor) || !CodigosIguais(codigoInformado, _opcoes.CodigoProfessor))
                 throw new InvalidOperationException("Código de professor inválido.");
 
             return TipoUsuario.Professor;
         }
 
-        
+
         private static bool CodigosIguais(string informado, string esperado) =>
             CryptographicOperations.FixedTimeEquals(
                 SHA256.HashData(Encoding.UTF8.GetBytes(informado)),
