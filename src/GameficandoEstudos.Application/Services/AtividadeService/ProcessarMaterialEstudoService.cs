@@ -34,7 +34,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         {
             if (textoCompleto.Length > TamanhoMaximoTextoCaracteres)
                 throw new InvalidOperationException(
-                    $"O texto do material excede o tamanho máximo permitido ({TamanhoMaximoTextoCaracteres:N0} caracteres).");
+                    $"O texto do material excede o tamanho máximo permitido ({TamanhoMaximoTextoCaracteres.ToString("N0", new System.Globalization.CultureInfo("pt-BR"))} caracteres).");
 
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)

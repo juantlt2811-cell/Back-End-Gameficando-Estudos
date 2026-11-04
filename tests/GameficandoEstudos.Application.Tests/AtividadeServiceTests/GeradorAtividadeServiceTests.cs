@@ -173,5 +173,44 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("*LLM não retornou um JSON válido*");
         }
+        [Fact]
+        public async Task GerarAtividadeAsync_TemaForaDoConteudo_DeveLancarExcecao()
+        {
+            int idMateriaFake = 1;
+            string temaFake = "Velozes e Furiosos";
+            int idProfessorLogado = 1;
+            var tipoAtividade = TipoAtividade.MultiplaEscolha;
+
+            var materiaRepositoryMock = new Mock<IMateriaRepository>();
+            var atividadeRepositoryMock = new Mock<IAtividadeRepository>();
+            var mockVectorSearch = new Mock<IVectorSearchService>();
+            var mockLlmService = new Mock<ILlmService>();
+            var auditoriaServiceMock = new Mock<IAuditoriaService>();
+
+            materiaRepositoryMock
+                .Setup(repo => repo.ObterPorIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(new Materia("Redes", 1, "Baixa", 1));
+
+            mockVectorSearch
+                .Setup(v => v.BuscarChunksRelevantesAsync(idMateriaFake, temaFake))
+                .ReturnsAsync(new List<string> { "A memória RAM é volátil." });
+
+            mockLlmService
+                .Setup(ia => ia.GerarRespostaAsync(It.IsAny<string>()))
+                .ReturnsAsync("{ \"enunciado\": \"\", \"alternativas\": [], \"gabarito\": \"\", \"temaForaDoConteudo\": true }");
+
+            var service = new GeradorAtividadeService(
+                mockVectorSearch.Object, mockLlmService.Object, atividadeRepositoryMock.Object,
+                materiaRepositoryMock.Object, auditoriaServiceMock.Object);
+
+            Func<Task> act = async () => await service.GerarAtividadeAsync(idMateriaFake, temaFake, tipoAtividade, idProfessorLogado);
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*não foi encontrado no material*");
+
+            atividadeRepositoryMock.Verify(repo => repo.AdicionarAsync(It.IsAny<Atividade>()), Times.Never);
+            auditoriaServiceMock.Verify(a => a.RegistrarAsync(
+                It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
     }
 }

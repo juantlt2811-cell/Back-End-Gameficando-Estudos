@@ -66,14 +66,23 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             };
 
             var prompt = $"Crie uma atividade do tipo '{tipoAtividade}' sobre o tema '{temaDesejado}' " +
-                         $"usando os seguintes conteúdos: {string.Join(", ", chunksRelevantes)}. " +
-                         instrucaoTipo +
-                         "Formate a resposta EXCLUSIVAMENTE como um JSON válido com três propriedades: " +
-                         "\"enunciado\" (somente o texto da pergunta, SEM as opções de resposta), " +
-                         instrucaoAlternativas +
-                         "\"gabarito\" (se for múltipla escolha, apenas a letra correta, como \"A\"; " +
-                         "caso contrário, a resposta esperada completa, sem explicações). " +
-                         "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
+                 $"usando EXCLUSIVAMENTE os seguintes conteúdos extraídos do material da matéria, sem " +
+                 $"usar conhecimento geral ou externo a eles: {string.Join(", ", chunksRelevantes)}. " +
+                 "Esses conteúdos são a ÚNICA fonte permitida. Se eles não tiverem relação clara e " +
+                 "suficiente com o tema pedido para montar uma atividade de qualidade sobre esse tema " +
+                 "específico, NÃO force nem invente uma relação artificial entre o tema e o conteúdo " +
+                 "— isso inclui temas completamente fora de contexto (cultura pop, entretenimento, " +
+                 "assuntos pessoais, etc.) que não aparecem no material. Nesse caso, marque " +
+                 "\"temaForaDoConteudo\": true e deixe os demais campos vazios. " +
+                 instrucaoTipo +
+                 "Formate a resposta EXCLUSIVAMENTE como um JSON válido com quatro propriedades: " +
+                 "\"enunciado\" (somente o texto da pergunta, SEM as opções de resposta), " +
+                 instrucaoAlternativas +
+                 "\"gabarito\" (se for múltipla escolha, apenas a letra correta, como \"A\"; " +
+                 "caso contrário, a resposta esperada completa, sem explicações), " +
+                 "\"temaForaDoConteudo\" (boolean, true SOMENTE se o conteúdo fornecido não sustentar " +
+                 "o tema pedido, false caso contrário). " +
+                 "Não inclua formatação markdown como ```json, retorne apenas o objeto JSON puro.";
 
             var respostaLlm = await _llmService.GerarRespostaAsync(prompt);
             var jsonLimpo = respostaLlm.Replace("```json", "").Replace("```", "").Trim();
@@ -87,6 +96,13 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             catch (JsonException ex)
             {
                 throw new InvalidOperationException("O LLM não retornou um JSON válido. Tente gerar a atividade novamente.", ex);
+            }
+
+            if (atividadeGerada.TemaForaDoConteudo)
+            {
+                throw new InvalidOperationException(
+                    $"O tema '{temaDesejado}' não foi encontrado no material enviado para esta matéria. " +
+                    "Tente um tema mais próximo do conteúdo da Caixa de Fontes, ou envie um material que cubra esse assunto.");
             }
 
             if (tipoAtividade == TipoAtividade.MultiplaEscolha &&
@@ -128,11 +144,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 atividadeCriada.IdMateria);
         }
 
-        /// <summary>
-        /// Embaralha a ordem das alternativas e recalcula a letra do gabarito de acordo com a nova
-        /// posição da resposta correta — independe de qualquer tentativa (não confiável) de pedir
-        /// variação de posição diretamente à IA.
-        /// </summary>
+        
         private static (List<string> Alternativas, string Gabarito) EmbaralharAlternativas(
             List<string> alternativasOriginais, string gabaritoOriginal)
         {
@@ -174,6 +186,6 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             return c is >= 'A' and <= 'Z' ? c - 'A' : -1;
         }
 
-        private record RespostaIaDto(string Enunciado, List<string>? Alternativas, string Gabarito);
+        private record RespostaIaDto(string Enunciado, List<string>? Alternativas, string Gabarito, bool TemaForaDoConteudo = false);
     }
 }
