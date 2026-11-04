@@ -9,8 +9,6 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
 {
     public class IniciarSessaoPraticaService
     {
-        private const int QuestoesPorSessao = 5;
-
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IMateriaRepository _materiaRepository;
         private readonly IAtividadeRepository _atividadeRepository;
@@ -28,8 +26,13 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             _sessaoPraticaRepository = sessaoPraticaRepository;
         }
 
-        public async Task<SessaoPraticaIniciadaDto> ExecutarAsync(int idAluno, int idMateria)
+        
+        public async Task<SessaoPraticaIniciadaDto> ExecutarAsync(
+            int idAluno, int idMateria, int? idModulo = null, TamanhoSessao tamanho = TamanhoSessao.Curta)
         {
+            if (!Enum.IsDefined(tamanho))
+                throw new ArgumentException("Tamanho de sessão inválido.", nameof(tamanho));
+
             var usuario = await _usuarioRepository.ObterPorIdAsync(idAluno);
             if (usuario == null || usuario.Tipo != TipoUsuario.Aluno)
                 throw new UnauthorizedAccessException("Apenas alunos podem iniciar sessões de prática.");
@@ -41,11 +44,16 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             if (materia == null)
                 throw new InvalidOperationException("Matéria não encontrada.");
 
-            var questoes = await _atividadeRepository.ObterAleatoriasPorMateriaAsync(idMateria, QuestoesPorSessao);
+            // O filtro por matéria no repositório já impede usar um módulo de outra matéria:
+            // nesse caso nenhuma atividade é encontrada e a sessão não é criada.
+            var questoes = await _atividadeRepository.ObterAleatoriasPorMateriaAsync(
+                idMateria, idModulo, tamanho.QuantidadeMaxima());
             if (questoes.Count == 0)
-                throw new InvalidOperationException("Esta matéria ainda não possui questões disponíveis.");
+                throw new InvalidOperationException(idModulo.HasValue
+                    ? "Este módulo ainda não possui questões disponíveis."
+                    : "Esta matéria ainda não possui questões disponíveis.");
 
-            var sessao = new SessaoPratica(idAluno, idMateria, questoes.Count);
+            var sessao = new SessaoPratica(idAluno, idMateria, questoes.Select(q => q.Id), idModulo);
             await _sessaoPraticaRepository.AdicionarAsync(sessao);
 
             return new SessaoPraticaIniciadaDto(

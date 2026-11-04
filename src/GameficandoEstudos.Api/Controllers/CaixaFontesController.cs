@@ -18,17 +18,20 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly RemoverMaterialEstudoService _removerMaterialService;
         private readonly ListarMateriaisDaMateriaService _listarMateriaisService;
         private readonly ProcessarArquivoEstudoService _processarArquivoService;
+        private readonly MoverMaterialDeModuloService _moverMaterialService;
 
         public CaixaFontesController(
             ProcessarMaterialEstudoService processarMaterialService,
             RemoverMaterialEstudoService removerMaterialService,
             ListarMateriaisDaMateriaService listarMateriaisService,
-            ProcessarArquivoEstudoService processarArquivoService)
+            ProcessarArquivoEstudoService processarArquivoService,
+            MoverMaterialDeModuloService moverMaterialService)
         {
             _processarMaterialService = processarMaterialService;
             _removerMaterialService = removerMaterialService;
             _listarMateriaisService = listarMateriaisService;
             _processarArquivoService = processarArquivoService;
+            _moverMaterialService = moverMaterialService;
         }
 
         [HttpPost("processar-texto")]
@@ -39,7 +42,8 @@ namespace GameficandoEstudos.Api.Controllers
             {
                 int idProfessor = ObterUsuarioIdAutenticado();
 
-                await _processarMaterialService.ProcessarTextoAsync(dto.IdMateria, dto.TituloMaterial, dto.TextoCompleto, idProfessor);
+                await _processarMaterialService.ProcessarTextoAsync(
+                    dto.IdMateria, dto.TituloMaterial, dto.TextoCompleto, idProfessor, dto.IdModulo);
 
                 return Ok(new { Mensagem = "Material processado e adicionado à base de conhecimento com sucesso." });
             }
@@ -63,6 +67,27 @@ namespace GameficandoEstudos.Api.Controllers
                 await _removerMaterialService.ExecutarAsync(dto.IdMateria, dto.DocumentoId, idProfessor);
 
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Proibido(ex.Message);
+            }
+            catch (Exception ex) when (EhErroDeNegocio(ex))
+            {
+                return BadRequest(new { Erro = ex.Message });
+            }
+        }
+
+        [HttpPut("mover-material")]
+        public async Task<IActionResult> MoverMaterial([FromBody] MoverMaterialDto dto)
+        {
+            try
+            {
+                int idProfessor = ObterUsuarioIdAutenticado();
+
+                await _moverMaterialService.ExecutarAsync(dto.IdMateria, dto.DocumentoId, dto.IdModulo, idProfessor);
+
+                return Ok(new { Mensagem = "Material movido com sucesso." });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -98,14 +123,15 @@ namespace GameficandoEstudos.Api.Controllers
         [HttpPost("upload")]
         [RequestSizeLimit(10 * 1024 * 1024)]
         [EnableRateLimiting("ia")]
-        public async Task<IActionResult> Upload([FromForm] int idMateria, [FromForm] IFormFile arquivo)
+        public async Task<IActionResult> Upload([FromForm] int idMateria, [FromForm] IFormFile arquivo, [FromForm] int? idModulo)
         {
             try
             {
                 int idProfessor = ObterUsuarioIdAutenticado();
 
                 await using var stream = arquivo.OpenReadStream();
-                await _processarArquivoService.ExecutarAsync(idMateria, arquivo.FileName, stream, arquivo.Length, idProfessor);
+                await _processarArquivoService.ExecutarAsync(
+                    idMateria, arquivo.FileName, stream, arquivo.Length, idProfessor, idModulo);
 
                 return Ok(new { Mensagem = "Arquivo processado e adicionado à base de conhecimento com sucesso." });
             }

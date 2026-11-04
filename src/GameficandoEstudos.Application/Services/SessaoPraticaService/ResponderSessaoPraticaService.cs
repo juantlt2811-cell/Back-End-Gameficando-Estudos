@@ -32,6 +32,10 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             if (sessao == null || sessao.IdUsuario != idAluno)
                 throw new UnauthorizedAccessException("Sessão de prática não encontrada.");
 
+            
+            if (!sessao.ContemQuestao(idAtividade))
+                throw new InvalidOperationException("Essa questão não pertence a esta sessão de prática.");
+
             var atividade = await _atividadeRepository.ObterPorIdAsync(idAtividade);
             if (atividade == null || atividade.IdMateria != sessao.IdMateria)
                 throw new InvalidOperationException("Essa questão não pertence a esta sessão de prática.");

@@ -47,21 +47,33 @@ public class AtividadeRepository : IAtividadeRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<Atividade>> ObterAleatoriasPorMateriaAsync(int idMateria, int quantidade)
+    public async Task<List<Atividade>> ObterAleatoriasPorMateriaAsync(int idMateria, int? idModulo, int? quantidade)
     {
-        var ativas = await _context.Atividades
-            .Where(a => a.IdMateria == idMateria && a.Ativa)
-            .ToListAsync();
+        var ativas = await AtivasDoRecorte(idMateria, idModulo).ToListAsync();
 
-        return ativas.OrderBy(_ => Guid.NewGuid()).Take(quantidade).ToList();
+        var embaralhadas = ativas.OrderBy(_ => Guid.NewGuid());
+
+        return quantidade.HasValue
+            ? embaralhadas.Take(quantidade.Value).ToList()
+            : embaralhadas.ToList();
     }
 
     public async Task<bool> PossuiRespostasAsync(int idAtividade)
     {
         return await _context.TentativasResposta.AnyAsync(t => t.IdAtividade == idAtividade);
     }
-    public async Task<int> ContarAtivasPorMateriaAsync(int idMateria)
+    public async Task<int> ContarAtivasPorMateriaAsync(int idMateria, int? idModulo)
     {
-        return await _context.Atividades.CountAsync(a => a.IdMateria == idMateria && a.Ativa);
+        return await AtivasDoRecorte(idMateria, idModulo).CountAsync();
+    }
+
+    private IQueryable<Atividade> AtivasDoRecorte(int idMateria, int? idModulo)
+    {
+        var query = _context.Atividades.Where(a => a.IdMateria == idMateria && a.Ativa);
+
+        if (idModulo.HasValue)
+            query = query.Where(a => a.IdModulo == idModulo.Value);
+
+        return query;
     }
 }

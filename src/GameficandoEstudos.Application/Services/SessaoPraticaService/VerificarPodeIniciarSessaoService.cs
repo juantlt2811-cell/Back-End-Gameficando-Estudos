@@ -6,8 +6,6 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
 {
     public class VerificarPodeIniciarSessaoService
     {
-        private const int QuestoesPorSessao = 5;
-
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IMateriaRepository _materiaRepository;
         private readonly IAtividadeRepository _atividadeRepository;
@@ -22,8 +20,12 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             _atividadeRepository = atividadeRepository;
         }
 
-        public async Task<ConfirmacaoInicioSessaoDto> ExecutarAsync(int idAluno, int idMateria)
+        public async Task<ConfirmacaoInicioSessaoDto> ExecutarAsync(
+            int idAluno, int idMateria, int? idModulo = null, TamanhoSessao tamanho = TamanhoSessao.Curta)
         {
+            if (!Enum.IsDefined(tamanho))
+                throw new ArgumentException("Tamanho de sessão inválido.", nameof(tamanho));
+
             var usuario = await _usuarioRepository.ObterPorIdAsync(idAluno);
             if (usuario == null || usuario.Tipo != TipoUsuario.Aluno)
                 throw new UnauthorizedAccessException("Apenas alunos podem praticar matérias.");
@@ -32,12 +34,14 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
             if (materia == null)
                 throw new InvalidOperationException("Matéria não encontrada.");
 
-            var totalQuestoes = await _atividadeRepository.ContarAtivasPorMateriaAsync(idMateria);
+            var totalQuestoes = await _atividadeRepository.ContarAtivasPorMateriaAsync(idMateria, idModulo);
             var tentativasRestantes = usuario.Gamificacao!.TentativasRestantesHoje;
 
             string? motivo = null;
             if (totalQuestoes == 0)
-                motivo = "Esta matéria ainda não possui questões disponíveis.";
+                motivo = idModulo.HasValue
+                    ? "Este módulo ainda não possui questões disponíveis."
+                    : "Esta matéria ainda não possui questões disponíveis.";
             else if (tentativasRestantes == 0)
                 motivo = "Limite diário de matérias praticadas atingido. Volte amanhã!";
 
@@ -45,7 +49,8 @@ namespace GameficandoEstudos.Application.Services.SessaoPraticaService
                 PodeIniciar: motivo == null,
                 Motivo: motivo,
                 TentativasRestantesHoje: tentativasRestantes,
-                TotalQuestoesDisponiveis: Math.Min(totalQuestoes, QuestoesPorSessao));
+                TotalQuestoesDisponiveis: Math.Min(totalQuestoes, tamanho.QuantidadeMaxima() ?? totalQuestoes),
+                TotalQuestoesNoRecorte: totalQuestoes);
         }
     }
 }

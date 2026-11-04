@@ -135,6 +135,7 @@ builder.Services.AddScoped<ICaixaFontesRepository, CaixaFontesRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IMateriaRepository, MateriaRepository>();
 builder.Services.AddScoped<IAtividadeRepository, AtividadeRepository>();
+builder.Services.AddScoped<IModuloRepository, ModuloRepository>();
 builder.Services.AddScoped<IVectorSearchService, VectorSearchService>();
 builder.Services.AddScoped<ISessaoPraticaRepository, SessaoPraticaRepository>();
 builder.Services.AddScoped<IRankingRepository, RankingRepository>();

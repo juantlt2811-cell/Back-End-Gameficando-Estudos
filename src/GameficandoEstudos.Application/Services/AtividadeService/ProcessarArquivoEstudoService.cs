@@ -28,7 +28,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         }
 
         public async Task ExecutarAsync(
-            int idMateria, string nomeArquivo, Stream conteudoArquivo, long tamanhoBytes, int idProfessorLogado)
+            int idMateria, string nomeArquivo, Stream conteudoArquivo, long tamanhoBytes, int idProfessorLogado,
+            int? idModulo = null)
         {
             var extensao = Path.GetExtension(nomeArquivo);
             if (string.IsNullOrEmpty(extensao) || !ExtensoesPermitidas.Contains(extensao))
@@ -46,7 +47,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
             if (string.IsNullOrWhiteSpace(texto))
                 throw new InvalidOperationException("Não foi possível extrair texto deste arquivo.");
 
-            await _processarMaterialEstudoService.ProcessarTextoAsync(idMateria, nomeArquivo, texto, idProfessorLogado);
+            await _processarMaterialEstudoService.ProcessarTextoAsync(idMateria, nomeArquivo, texto, idProfessorLogado, idModulo);
         }
 
         private static async Task ValidarAssinaturaAsync(Stream conteudo, string extensao)

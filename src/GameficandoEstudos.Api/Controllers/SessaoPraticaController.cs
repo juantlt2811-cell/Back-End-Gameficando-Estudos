@@ -1,5 +1,6 @@
 ﻿using GameficandoEstudos.Application.DTOs;
 using GameficandoEstudos.Application.Services.SessaoPraticaService;
+using GameficandoEstudos.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -32,16 +33,18 @@ namespace GameficandoEstudos.Api.Controllers
             _verificarPodeIniciarService = verificarPodeIniciarService;
         }
 
+        
         [HttpPost("iniciar/{idMateria}")]
-        public async Task<IActionResult> Iniciar(int idMateria)
+        public async Task<IActionResult> Iniciar(
+            int idMateria, [FromQuery] int? idModulo, [FromQuery] TamanhoSessao tamanho = TamanhoSessao.Curta)
         {
             try
             {
-                var resultado = await _iniciarService.ExecutarAsync(ObterUsuarioIdAutenticado(), idMateria);
+                var resultado = await _iniciarService.ExecutarAsync(ObterUsuarioIdAutenticado(), idMateria, idModulo, tamanho);
                 return Ok(resultado);
             }
             catch (UnauthorizedAccessException ex) { return Proibido(ex.Message); }
-            catch (InvalidOperationException ex) { return BadRequest(new { Erro = ex.Message }); }
+            catch (Exception ex) when (EhErroDeNegocio(ex)) { return BadRequest(new { Erro = ex.Message }); }
         }
 
         [HttpPost("{idSessao}/responder/{idAtividade}")]
@@ -69,15 +72,17 @@ namespace GameficandoEstudos.Api.Controllers
             catch (InvalidOperationException ex) { return BadRequest(new { Erro = ex.Message }); }
         }
         [HttpGet("confirmar-inicio/{idMateria}")]
-        public async Task<IActionResult> ConfirmarInicio(int idMateria)
+        public async Task<IActionResult> ConfirmarInicio(
+            int idMateria, [FromQuery] int? idModulo, [FromQuery] TamanhoSessao tamanho = TamanhoSessao.Curta)
         {
             try
             {
-                var confirmacao = await _verificarPodeIniciarService.ExecutarAsync(ObterUsuarioIdAutenticado(), idMateria);
+                var confirmacao = await _verificarPodeIniciarService.ExecutarAsync(
+                    ObterUsuarioIdAutenticado(), idMateria, idModulo, tamanho);
                 return Ok(confirmacao);
             }
             catch (UnauthorizedAccessException ex) { return Proibido(ex.Message); }
-            catch (InvalidOperationException ex) { return BadRequest(new { Erro = ex.Message }); }
+            catch (Exception ex) when (EhErroDeNegocio(ex)) { return BadRequest(new { Erro = ex.Message }); }
         }
         private int ObterUsuarioIdAutenticado()
         {

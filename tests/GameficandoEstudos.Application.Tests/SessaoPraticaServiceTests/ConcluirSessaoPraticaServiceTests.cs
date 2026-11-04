@@ -34,7 +34,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var sessaoRepoMock = new Mock<ISessaoPraticaRepository>();
             var usuarioRepoMock = new Mock<IUsuarioRepository>();
 
-            var sessao = new SessaoPratica(idUsuario: 99, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 99, idMateria: 10, idsAtividades: new[] { 1, 2, 3 });
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
 
             var service = new ConcluirSessaoPraticaService(sessaoRepoMock.Object, usuarioRepoMock.Object);
@@ -51,7 +51,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var sessaoRepoMock = new Mock<ISessaoPraticaRepository>();
             var usuarioRepoMock = new Mock<IUsuarioRepository>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 1, 2, 3 });
             var aluno = new Usuario("Aluno Teste", "aluno@teste.com", "senha123", TipoUsuario.Aluno);
 
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
@@ -73,7 +73,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var sessaoRepoMock = new Mock<ISessaoPraticaRepository>();
             var usuarioRepoMock = new Mock<IUsuarioRepository>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 2);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 1, 2 });
             sessao.RegistrarTentativa(new TentativaResposta(
                 idSessaoPratica: 1, idAtividade: 1, idUsuario: 1, idMateria: 10,
                 respostaAluno: "A", pontuacao: 100, feedback: "Correto!"));

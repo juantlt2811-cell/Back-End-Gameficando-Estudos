@@ -14,6 +14,12 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<CaixaFontes> AtualizarAsync(CaixaFontes caixaFontes);
         Task AdicionarChunksAsync(IEnumerable<FonteChunks> chunks);
         Task RemoverChunksPorDocumentoIdAsync(int idMateria, Guid documentoId);
+
+        /// <summary>
+        /// Move todos os trechos de um documento da matéria para outro módulo (ou para nenhum, com <c>null</c>).
+        /// Devolve quantos trechos foram atualizados — 0 significa que o documento não existe nessa matéria.
+        /// </summary>
+        Task<int> MoverDocumentoDeModuloAsync(int idMateria, Guid documentoId, int? idModulo);
         Task<IEnumerable<ResumoOrigem>> PesquisarResumoMateriaisAsync(int idMateria, string? termoBusca);
     }
 }

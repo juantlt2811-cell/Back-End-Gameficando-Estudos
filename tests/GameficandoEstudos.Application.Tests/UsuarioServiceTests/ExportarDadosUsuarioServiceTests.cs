@@ -74,7 +74,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
             var aluno = new Usuario("Aluno Teste", "aluno@teste.com", "hash", TipoUsuario.Aluno);
             typeof(Usuario).GetProperty("Id")?.SetValue(aluno, 2);
 
-            var sessao = new SessaoPratica(idUsuario: 2, idMateria: 10, totalQuestoes: 2);
+            var sessao = new SessaoPratica(idUsuario: 2, idMateria: 10, idsAtividades: new[] { 1, 2 });
             sessao.RegistrarTentativa(new TentativaResposta(
                 idSessaoPratica: 1, idAtividade: 1, idUsuario: 2, idMateria: 10,
                 respostaAluno: "A", pontuacao: 100, feedback: "Correto!"));

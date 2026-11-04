@@ -19,12 +19,13 @@ public class VectorSearchService : IVectorSearchService
 
     private const double LimiarDistanciaMaxima = 0.6;
 
-    public async Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado)
+    public async Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado, int? idModulo)
     {
         var vetorBusca = new Vector(await _llmService.GerarEmbeddingsAsync(temaDesejado));
 
         var chunksRelevantes = await _context.FonteChunks
             .Where(fc => fc.CaixaFonte.IdMateria == idMateria)
+            .Where(fc => idModulo == null || fc.IdModulo == idModulo)
             .Where(fc => fc.Embeddings.CosineDistance(vetorBusca) <= LimiarDistanciaMaxima)
             .OrderBy(fc => fc.Embeddings.CosineDistance(vetorBusca))
             .Take(5)

@@ -1,5 +1,5 @@
 ﻿namespace GameficandoEstudos.Application.DTOs
 {
     public record ConfirmacaoInicioSessaoDto(
-        bool PodeIniciar, string? Motivo, int TentativasRestantesHoje, int TotalQuestoesDisponiveis);
+        bool PodeIniciar, string? Motivo, int TentativasRestantesHoje, int TotalQuestoesDisponiveis, int TotalQuestoesNoRecorte);
 }

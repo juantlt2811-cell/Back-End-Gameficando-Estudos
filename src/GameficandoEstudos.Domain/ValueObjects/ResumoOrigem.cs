@@ -4,6 +4,6 @@ using System.Text;
 
 namespace GameficandoEstudos.Domain.ValueObjects
 {
-    public record ResumoOrigem(Guid DocumentoId, string Titulo, int QuantidadeChunks, DateTime UltimaAtualizacao);
+    public record ResumoOrigem(Guid DocumentoId, string Titulo, int QuantidadeChunks, DateTime UltimaAtualizacao, int? IdModulo);
 }
 

@@ -16,7 +16,8 @@ namespace GameficandoEstudos.Application.Tests.DtosTests
             typeof(RegistrarUsuarioDto), typeof(LoginDto), typeof(AlterarSenhaDto), typeof(RedefinirSenhaDto),
             typeof(SolicitarRedefinicaoSenhaDto), typeof(AnonimizarContaDto), typeof(RefreshTokenDto),
             typeof(LogoutDto), typeof(EnviarRespostaDto), typeof(GerarAtividadeDto), typeof(AtualizarAtividadeDto),
-            typeof(AdicionarMaterialDto), typeof(CriarMateriaDto), typeof(AtualizarMateriaDto)
+            typeof(AdicionarMaterialDto), typeof(CriarMateriaDto), typeof(AtualizarMateriaDto),
+            typeof(CriarModuloDto), typeof(RenomearModuloDto), typeof(MoverParaModuloDto), typeof(MoverMaterialDto)
         };
 
         private static IEnumerable<(Type Dto, ParameterInfo Parametro)> ParametrosDeTexto() =>

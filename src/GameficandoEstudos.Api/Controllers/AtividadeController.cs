@@ -20,19 +20,22 @@ namespace GameficandoEstudos.Api.Controllers
         private readonly ExcluirAtividadeService _excluirAtividadeService;
         private readonly ListarAtividadesDaMateriaService _listarAtividadesService;
         private readonly TestarAtividadeService _testarAtividadeService;
+        private readonly MoverAtividadeDeModuloService _moverAtividadeDeModuloService;
 
         public AtividadeController(
             GeradorAtividadeService geradorAtividadeService,
             AtualizarAtividadeService atualizarAtividadeService,
             ExcluirAtividadeService excluirAtividadeService,
             ListarAtividadesDaMateriaService listarAtividadesService,
-            TestarAtividadeService testarAtividadeService)
+            TestarAtividadeService testarAtividadeService,
+            MoverAtividadeDeModuloService moverAtividadeDeModuloService)
         {
             _geradorAtividadeService = geradorAtividadeService;
             _atualizarAtividadeService = atualizarAtividadeService;
             _excluirAtividadeService = excluirAtividadeService;
             _listarAtividadesService = listarAtividadesService;
             _testarAtividadeService = testarAtividadeService;
+            _moverAtividadeDeModuloService = moverAtividadeDeModuloService;
         }
 
         [HttpGet("materia/{idMateria}")]
@@ -54,7 +57,7 @@ namespace GameficandoEstudos.Api.Controllers
                 var tipo = (TipoAtividade)dto.TipoAtividade;
                 int idProfessor = ObterUsuarioIdAutenticado();
 
-                var atividadeGerada = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo, idProfessor);
+                var atividadeGerada = await _geradorAtividadeService.GerarAtividadeAsync(dto.IdMateria, dto.Tema, tipo, idProfessor, dto.IdModulo);
                 return Ok(atividadeGerada);
             }
             catch (UnauthorizedAccessException ex)
@@ -108,6 +111,26 @@ namespace GameficandoEstudos.Api.Controllers
         }
 
       
+
+        [HttpPut("{id}/modulo")]
+        [Authorize(Roles = "Professor")]
+        public async Task<IActionResult> MoverParaModulo(int id, [FromBody] MoverParaModuloDto dto)
+        {
+            try
+            {
+                int idProfessor = ObterUsuarioIdAutenticado();
+                await _moverAtividadeDeModuloService.ExecutarAsync(id, dto.IdModulo, idProfessor);
+                return Ok(new { Mensagem = "Atividade movida com sucesso!" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Proibido(ex.Message);
+            }
+            catch (Exception ex) when (EhErroDeNegocio(ex))
+            {
+                return BadRequest(new { Erro = ex.Message });
+            }
+        }
 
         [HttpPost("{id}/testar")]
         [Authorize(Roles = "Professor")]

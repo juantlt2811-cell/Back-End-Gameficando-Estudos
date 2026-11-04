@@ -57,6 +57,9 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.Property<int>("IdMateria")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("IdModulo")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -68,6 +71,8 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IdMateria");
+
+                    b.HasIndex("IdModulo");
 
                     b.ToTable("Atividades");
                 });
@@ -130,6 +135,9 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.Property<int>("IdCaixaFonte")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("IdModulo")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Origem")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -138,6 +146,8 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IdCaixaFonte");
+
+                    b.HasIndex("IdModulo");
 
                     b.ToTable("FonteChunks");
                 });
@@ -215,6 +225,36 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.ToTable("Materias");
                 });
 
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.Modulo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdMateria")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdMateria", "Nome")
+                        .IsUnique();
+
+                    b.ToTable("Modulos");
+                });
+
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -267,8 +307,17 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.Property<int>("IdMateria")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("IdModulo")
+                        .HasColumnType("integer");
+
                     b.Property<int>("IdUsuario")
                         .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<int>>("IdsAtividades")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer[]")
+                        .HasDefaultValueSql("'{}'");
 
                     b.Property<DateTime>("IniciadaEm")
                         .HasColumnType("timestamp with time zone");
@@ -285,6 +334,8 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IdMateria");
+
+                    b.HasIndex("IdModulo");
 
                     b.HasIndex("IdUsuario");
 
@@ -394,7 +445,14 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Modulo", "Modulo")
+                        .WithMany()
+                        .HasForeignKey("IdModulo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Materia");
+
+                    b.Navigation("Modulo");
                 });
 
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.CaixaFontes", b =>
@@ -416,6 +474,11 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Modulo", null)
+                        .WithMany()
+                        .HasForeignKey("IdModulo")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CaixaFonte");
                 });
 
@@ -428,6 +491,17 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Professor");
+                });
+
+            modelBuilder.Entity("GameficandoEstudos.Domain.Entities.Modulo", b =>
+                {
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Materia", "Materia")
+                        .WithMany()
+                        .HasForeignKey("IdMateria")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Materia");
                 });
 
             modelBuilder.Entity("GameficandoEstudos.Domain.Entities.RefreshToken", b =>
@@ -446,6 +520,11 @@ namespace GameficandoEstudos.Infrastructure.Migrations
                         .HasForeignKey("IdMateria")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("GameficandoEstudos.Domain.Entities.Modulo", null)
+                        .WithMany()
+                        .HasForeignKey("IdModulo")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("GameficandoEstudos.Domain.Entities.Usuario", "Usuario")
                         .WithMany()
