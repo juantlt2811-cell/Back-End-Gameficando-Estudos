@@ -38,9 +38,10 @@ tests/
 | `Usuario` | Aluno ou Professor; dono do `PerfilGamificacao`; suporta redefinição de senha e anonimização (LGPD). |
 | `PerfilGamificacao` | Ofensiva atual/recorde e limite diário de atividades (3/dia). |
 | `Materia` | Matéria cadastrada por um professor. |
+| `Modulo` | Divisão opcional de uma matéria (ex.: "Condicionais", "Laços"). Agrupa atividades e materiais; o que não tem módulo fica em "Sem módulo" e vale para a matéria inteira. |
 | `CaixaFontes` / `FonteChunks` | Material de estudo enviado pelo professor, já dividido em chunks com embedding. |
 | `Atividade` | Questão gerada por IA ou criada manualmente — `Conteudo` (enunciado) e `Alternativas` são separados, sem precisar de parsing no cliente. |
-| `SessaoPratica` / `TentativaResposta` | Uma sessão de prática do aluno numa matéria e cada resposta dada dentro dela. |
+| `SessaoPratica` / `TentativaResposta` | Uma sessão de prática do aluno numa matéria (ou num módulo dela) e cada resposta dada dentro dela. A sessão guarda os ids das atividades sorteadas, e só elas podem ser respondidas. |
 | `RefreshToken` | Token opaco (hash SHA-256) com rotação, usado no fluxo de refresh/logout. |
 | `LogAuditoria` | Trilha de auditoria de ações sensíveis; não tem FK para `Usuario` de propósito, para sobreviver à anonimização da conta. |
 
@@ -79,19 +80,29 @@ Todos os endpoints (exceto `auth/cadastrar` e `auth/login`) exigem `Authorizatio
 | GET | `pesquisar` | — | Busca de matérias. |
 | GET | `{id}/estatisticas` | Professor | Estatísticas de desempenho dos alunos na matéria. |
 
+### Módulo (`/api/modulo`)
+| Método | Rota | Papel | Descrição |
+|---|---|---|---|
+| GET | `materia/{idMateria}` | — | Lista os módulos da matéria, com quantidade de atividades ativas e de materiais de cada um. |
+| POST | (raiz) | Professor | Cria um módulo: `{ idMateria, nome }`. Nome único por matéria. |
+| PUT | `{id}` | Professor | Renomeia um módulo: `{ nome }`. |
+| DELETE | `{id}` | Professor | Exclui o módulo. Atividades e materiais dele voltam para "Sem módulo" (nada é apagado). |
+
 ### Caixa de Fontes (`/api/caixafontes`) — todos exigem papel Professor
 | Método | Rota | Descrição |
 |---|---|---|
-| POST | `processar-texto` | Processa um texto colado diretamente. |
-| POST | `upload` | Sobe um arquivo (PDF, DOCX, texto ou código) como material de estudo. |
-| GET | `materia/{idMateria}/materiais` | Lista o material de estudo de uma matéria. |
+| POST | `processar-texto` | Processa um texto colado diretamente. Aceita `idModulo` opcional. |
+| POST | `upload` | Sobe um arquivo (PDF, DOCX, texto ou código) como material de estudo. Aceita o campo de formulário `idModulo` opcional. |
+| PUT | `mover-material` | Move um material já enviado para outro módulo (ou para nenhum, com `idModulo: null`), sem reprocessar o arquivo. |
+| GET | `materia/{idMateria}/materiais` | Lista o material de estudo de uma matéria, com o `idModulo` de cada um. |
 | DELETE | `remover-material` | Remove um material de estudo (e seus chunks). |
 
 ### Atividade (`/api/atividade`)
 | Método | Rota | Papel | Descrição |
 |---|---|---|---|
 | GET | `materia/{idMateria}` | — | Lista atividades de uma matéria. |
-| POST | `gerar` | Professor | Gera uma atividade via RAG + LLM a partir do material da matéria. |
+| POST | `gerar` | Professor | Gera uma atividade via RAG + LLM a partir do material da matéria (ou só do módulo, se `idModulo` for informado). |
+| PUT | `{id}/modulo` | Professor | Move a atividade para outro módulo: `{ idModulo }` (`null` = "Sem módulo"). |
 | PUT | `atualizar` | Professor | Edita uma atividade existente. |
 | DELETE | `{id}` | Professor | Remove (ou inativa, se já tiver respostas) uma atividade. |
 | POST | `{id}/testar` | Professor | Testa uma atividade com uma resposta, sem contar como tentativa de aluno. |
@@ -99,10 +110,12 @@ Todos os endpoints (exceto `auth/cadastrar` e `auth/login`) exigem `Authorizatio
 ### Sessão Prática (`/api/sessaopratica`) — todos exigem papel Aluno
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `confirmar-inicio/{idMateria}` | Confirma se o aluno pode iniciar uma sessão (respeita o limite diário). |
-| POST | `iniciar/{idMateria}` | Inicia uma sessão de prática com um conjunto de questões. |
+| GET | `confirmar-inicio/{idMateria}?idModulo=&tamanho=` | Confirma se o aluno pode iniciar uma sessão (respeita o limite diário) e quantas questões ela terá. |
+| POST | `iniciar/{idMateria}?idModulo=&tamanho=` | Inicia uma sessão de prática com questões sorteadas do módulo (ou da matéria inteira, sem `idModulo`). |
 | POST | `{idSessao}/responder/{idAtividade}` | Envia a resposta de uma questão da sessão. |
 | POST | `{idSessao}/concluir` | Conclui a sessão e atualiza a ofensiva. |
+
+`tamanho` aceita `Curta` (5), `Media` (10), `Longa` (20) ou `Todas` (também como 1 a 4). Sem query string, a sessão continua como antes: 5 questões da matéria inteira. O limite diário (3 sessões concluídas por dia) não muda com o tamanho.
 
 ### Ranking (`/api/ranking`)
 | Método | Rota | Descrição |
@@ -118,9 +131,9 @@ Todos os endpoints (exceto `auth/cadastrar` e `auth/login`) exigem `Authorizatio
 
 ## Geração de atividades (RAG)
 
-1. O professor chama `POST /api/atividade/gerar` com `idMateria`, `tema` e `tipoAtividade`.
-2. O texto é embeddado (`gemini-embedding-001`, truncado para 768 dimensões) e os chunks mais relevantes do material da matéria são buscados por distância de cosseno no pgvector.
-3. Esses chunks viram contexto de um prompt para o Groq (`openai/gpt-oss-20b`), que deve responder em JSON estruturado: `{ enunciado, alternativas, gabarito }`.
+1. O professor chama `POST /api/atividade/gerar` com `idMateria`, `tema`, `tipoAtividade` e, opcionalmente, `idModulo`.
+2. O texto é embeddado (`gemini-embedding-001`, truncado para 768 dimensões) e os chunks mais relevantes são buscados por distância de cosseno no pgvector — só no material do módulo, quando há módulo, ou em todo o material da matéria. Chunks acima do limiar de distância (`LimiarDistanciaMaxima` em `VectorSearchService`) são descartados; se nenhum sobrar, a geração é recusada sem chamar o LLM.
+3. Esses chunks viram contexto de um prompt para o Groq (`openai/gpt-oss-20b`), que deve usar **apenas** esse conteúdo e responder em JSON estruturado: `{ enunciado, alternativas, gabarito, temaForaDoConteudo }`. Se o tema pedido não estiver no material, o LLM marca `temaForaDoConteudo` e a API devolve erro em vez de inventar uma questão.
 4. Para múltipla escolha, o backend valida que vieram pelo menos 2 alternativas e **embaralha a ordem delas**, recalculando a letra do gabarito — isso remove o viés de posição do LLM (tendência de sempre colocar a resposta certa na mesma letra).
 5. A atividade é salva com `Conteudo` (só o enunciado) e `Alternativas` separados, para o cliente não precisar fazer parsing de texto.
 

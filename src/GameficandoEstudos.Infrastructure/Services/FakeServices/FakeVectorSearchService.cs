@@ -6,7 +6,7 @@ namespace GameficandoEstudos.Infrastructure.Services.FakeServices
 {
     public class FakeVectorSearchService : IVectorSearchService
     {
-        public Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado)
+        public Task<IEnumerable<string>> BuscarChunksRelevantesAsync(int idMateria, string temaDesejado, int? idModulo)
         {
             var chunksFakes = new List<string>
             {

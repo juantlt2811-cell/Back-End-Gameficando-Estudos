@@ -18,32 +18,48 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
         private readonly IAtividadeRepository _atividadeRepository;
         private readonly IMateriaRepository _materiaRepository;
         private readonly IAuditoriaService _auditoriaService;
+        private readonly IModuloRepository _moduloRepository;
 
         public GeradorAtividadeService(
             IVectorSearchService vectorSearch,
             ILlmService llmService,
             IAtividadeRepository atividadeRepository,
             IMateriaRepository materiaRepository,
-            IAuditoriaService auditoriaService)
+            IAuditoriaService auditoriaService,
+            IModuloRepository moduloRepository)
         {
             _vectorSearch = vectorSearch;
             _llmService = llmService;
             _atividadeRepository = atividadeRepository;
             _materiaRepository = materiaRepository;
             _auditoriaService = auditoriaService;
+            _moduloRepository = moduloRepository;
         }
 
+        
         public async Task<AtividadeGeradaDto> GerarAtividadeAsync(
-            int idMateria, string temaDesejado, TipoAtividade tipoAtividade, int idProfessorLogado)
+            int idMateria, string temaDesejado, TipoAtividade tipoAtividade, int idProfessorLogado, int? idModulo = null)
         {
             var materia = await _materiaRepository.ObterPorIdAsync(idMateria);
             if (materia == null)
                 throw new InvalidOperationException("Matéria não encontrada");
 
-            var chunksRelevantes = await _vectorSearch.BuscarChunksRelevantesAsync(idMateria, temaDesejado);
+            if (materia.IdProfessor != idProfessorLogado)
+                throw new UnauthorizedAccessException("Você não tem permissão para gerar atividades nesta matéria.");
+
+            if (idModulo.HasValue)
+            {
+                var modulo = await _moduloRepository.ObterPorIdAsync(idModulo.Value);
+                if (modulo == null || modulo.IdMateria != idMateria)
+                    throw new InvalidOperationException("Módulo não encontrado nesta matéria.");
+            }
+
+            var chunksRelevantes = await _vectorSearch.BuscarChunksRelevantesAsync(idMateria, temaDesejado, idModulo);
 
             if (chunksRelevantes == null || !chunksRelevantes.Any())
-                throw new InvalidOperationException("Nenhuma fonte encontrada para essa matéria e tema");
+                throw new InvalidOperationException(idModulo.HasValue
+                    ? "Nenhuma fonte encontrada nos materiais deste módulo para esse tema"
+                    : "Nenhuma fonte encontrada para essa matéria e tema");
 
             var instrucaoAlternativas = tipoAtividade == TipoAtividade.MultiplaEscolha
                 ? "\"alternativas\" (um array com EXATAMENTE 4 strings, cada uma sendo uma opção completa, ex.: \"A) Texto da opção\") e "
@@ -126,13 +142,15 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 conteudo: atividadeGerada.Enunciado,
                 gabarito: gabaritoFinal,
                 idMateria: idMateria,
-                alternativas: alternativasFinais
+                alternativas: alternativasFinais,
+                idModulo: idModulo
             );
 
             var atividadeCriada = await _atividadeRepository.AdicionarAsync(novaAtividade);
 
             await _auditoriaService.RegistrarAsync(
-                idProfessorLogado, "Atividade.Gerar", "Atividade", atividadeCriada.Id.ToString(), $"Tema: {temaDesejado}");
+                idProfessorLogado, "Atividade.Gerar", "Atividade", atividadeCriada.Id.ToString(),
+                idModulo.HasValue ? $"Tema: {temaDesejado} | Módulo: {idModulo}" : $"Tema: {temaDesejado}");
 
             return new AtividadeGeradaDto(
                 atividadeCriada.Id,
@@ -141,7 +159,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 atividadeCriada.Conteudo,
                 atividadeCriada.Alternativas,
                 atividadeCriada.Gabarito,
-                atividadeCriada.IdMateria);
+                atividadeCriada.IdMateria,
+                atividadeCriada.IdModulo);
         }
 
         

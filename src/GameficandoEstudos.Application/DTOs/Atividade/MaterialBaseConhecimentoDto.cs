@@ -8,6 +8,7 @@ namespace GameficandoEstudos.Application.DTOs
         Guid DocumentoId,
         string TituloMaterial,
         int QuantidadeChunks,
-        DateTime UltimaAtualizacao
+        DateTime UltimaAtualizacao,
+        int? IdModulo
     );
 }

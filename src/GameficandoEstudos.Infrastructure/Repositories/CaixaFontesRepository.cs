@@ -55,6 +55,15 @@ public class CaixaFontesRepository : ICaixaFontesRepository
             .ExecuteDeleteAsync();
     }
 
+    public async Task<int> MoverDocumentoDeModuloAsync(int idMateria, Guid documentoId, int? idModulo)
+    {
+        return await _context.FonteChunks
+            .Where(fc => fc.DocumentoId == documentoId && fc.CaixaFonte.IdMateria == idMateria)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(fc => fc.IdModulo, idModulo)
+                .SetProperty(fc => fc.AtualizadoEm, DateTime.UtcNow));
+    }
+
     public async Task<IEnumerable<ResumoOrigem>> PesquisarResumoMateriaisAsync(int idMateria, string? termoBusca)
     {
         var query = _context.FonteChunks
@@ -66,12 +75,13 @@ public class CaixaFontesRepository : ICaixaFontesRepository
         }
 
         var resumos = await query
-            .GroupBy(fc => new { fc.DocumentoId, fc.Origem })
+            .GroupBy(fc => new { fc.DocumentoId, fc.Origem, fc.IdModulo })
             .Select(g => new ResumoOrigem(
                 g.Key.DocumentoId,
                 g.Key.Origem, 
                 g.Count(),
-                g.Max(x => x.AtualizadoEm) 
+                g.Max(x => x.AtualizadoEm),
+                g.Key.IdModulo
             ))
             .ToListAsync();
 

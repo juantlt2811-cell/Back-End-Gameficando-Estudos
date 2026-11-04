@@ -11,5 +11,8 @@ namespace GameficandoEstudos.Application.DTOs
         string Tema,
 
         [param: Range(1, 3, ErrorMessage = "Tipo de atividade inválido.")]
-        int TipoAtividade);
+        int TipoAtividade,
+
+        [param: Range(1, int.MaxValue, ErrorMessage = "Id do módulo inválido.")]
+        int? IdModulo = null);
 }

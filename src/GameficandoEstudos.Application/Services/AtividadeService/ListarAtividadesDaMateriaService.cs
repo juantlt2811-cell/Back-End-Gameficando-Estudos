@@ -44,7 +44,8 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
                 a.Conteudo,
                 a.Alternativas,
                 a.IdMateria,
-                a.Ativa
+                a.Ativa,
+                a.IdModulo
             ));
         }
     }

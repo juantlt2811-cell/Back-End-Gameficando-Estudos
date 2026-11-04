@@ -10,7 +10,7 @@ namespace GameficandoEstudos.Application.Interfaces
         Task<bool> PossuiRespostasAsync(int idAtividade);
         Task RemoverAsync(Atividade atividade);
         Task AtualizarAsync(Atividade atividade);
-        Task<List<Atividade>> ObterAleatoriasPorMateriaAsync(int idMateria, int quantidade);
-        Task<int> ContarAtivasPorMateriaAsync(int idMateria);
+        Task<List<Atividade>> ObterAleatoriasPorMateriaAsync(int idMateria, int? idModulo, int? quantidade);
+        Task<int> ContarAtivasPorMateriaAsync(int idMateria, int? idModulo);
     }
 }

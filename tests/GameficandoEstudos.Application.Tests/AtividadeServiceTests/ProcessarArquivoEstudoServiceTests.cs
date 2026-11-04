@@ -35,7 +35,8 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
                 _materiaRepositoryMock.Object,
                 _caixaFontesRepositoryMock.Object,
                 _auditoriaServiceMock.Object,
-                new DivisorDeTextoService(new DivisorDeTextoOptions())
+                new DivisorDeTextoService(new DivisorDeTextoOptions()),
+                new Mock<IModuloRepository>().Object
             );
 
             _service = new ProcessarArquivoEstudoService(_extratorMock.Object, processarMaterialService);

@@ -10,6 +10,7 @@ namespace GameficandoEstudos.Infrastructure.Data
 
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Materia> Materias { get; set; }
+        public DbSet<Modulo> Modulos { get; set; }
         public DbSet<CaixaFontes> CaixaFontes { get; set; }
         public DbSet<FonteChunks> FonteChunks { get; set; }
         public DbSet<Atividade> Atividades { get; set; }
@@ -66,7 +67,25 @@ namespace GameficandoEstudos.Infrastructure.Data
                 b.HasOne(a => a.Materia)
                  .WithMany()
                  .HasForeignKey(a => a.IdMateria)
-                 .OnDelete(DeleteBehavior.Restrict); 
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                
+                b.HasOne(a => a.Modulo)
+                 .WithMany()
+                 .HasForeignKey(a => a.IdModulo)
+                 .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<Modulo>(b =>
+            {
+                b.HasKey(m => m.Id);
+                b.Property(m => m.Nome).IsRequired().HasMaxLength(Modulo.TamanhoMaximoNome);
+                b.HasIndex(m => new { m.IdMateria, m.Nome }).IsUnique();
+
+                b.HasOne(m => m.Materia)
+                 .WithMany()
+                 .HasForeignKey(m => m.IdMateria)
+                 .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<CaixaFontes>(b =>
@@ -100,6 +119,12 @@ namespace GameficandoEstudos.Infrastructure.Data
                  .WithMany(c => c.Chunks)
                  .HasForeignKey(f => f.IdCaixaFonte)
                  .OnDelete(DeleteBehavior.Cascade);
+
+                
+                b.HasOne<Modulo>()
+                 .WithMany()
+                 .HasForeignKey(f => f.IdModulo)
+                 .OnDelete(DeleteBehavior.SetNull);
             });
             modelBuilder.Entity<SessaoPratica>(b =>
             {
@@ -107,6 +132,10 @@ namespace GameficandoEstudos.Infrastructure.Data
 
                 b.HasOne(s => s.Usuario).WithMany().HasForeignKey(s => s.IdUsuario).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(s => s.Materia).WithMany().HasForeignKey(s => s.IdMateria).OnDelete(DeleteBehavior.Restrict);
+                b.HasOne<Modulo>().WithMany().HasForeignKey(s => s.IdModulo).OnDelete(DeleteBehavior.SetNull);
+
+                
+                b.Property(s => s.IdsAtividades).HasColumnType("integer[]").HasDefaultValueSql("'{}'");
 
                 b.HasMany(s => s.Tentativas)
                  .WithOne()

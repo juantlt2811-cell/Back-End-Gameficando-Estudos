@@ -55,7 +55,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var llmServiceMock = new Mock<ILlmService>();
 
-            var sessao = new SessaoPratica(idUsuario: 99, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 99, idMateria: 10, idsAtividades: new[] { 5, 6, 7 });
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
 
             var service = new ResponderSessaoPraticaService(
@@ -74,7 +74,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var llmServiceMock = new Mock<ILlmService>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 5, 6, 7 });
             var atividadeDeOutraMateria = new Atividade("Questao X", TipoAtividade.MultiplaEscolha, "Conteudo", "A", idMateria: 999);
 
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
@@ -96,7 +96,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var llmServiceMock = new Mock<ILlmService>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 5, 6, 7 });
             var atividade = new Atividade("Questao 1", TipoAtividade.MultiplaEscolha, "Conteudo", "A", idMateria: 10);
 
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
@@ -123,7 +123,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var llmServiceMock = new Mock<ILlmService>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 5, 6, 7 });
             var atividade = new Atividade("O que é um FOR?", TipoAtividade.Dissertativa, "Explique o FOR", "Estrutura de repetição", idMateria: 10);
 
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
@@ -150,7 +150,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             var atividadeRepoMock = new Mock<IAtividadeRepository>();
             var llmServiceMock = new Mock<ILlmService>();
 
-            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, totalQuestoes: 3);
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 5, 6, 7 });
             var atividade = new Atividade("Questao 1", TipoAtividade.MultiplaEscolha, "Conteudo", "A", idMateria: 10);
 
             sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
@@ -165,6 +165,31 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("Essa questão já foi respondida nesta sessão.");
+        }
+
+        [Fact]
+        public async Task ExecutarAsync_QuandoAtividadeNaoFoiSorteadaParaASessao_DeveLancarSemAvaliarNemSalvar()
+        {
+            var sessaoRepoMock = new Mock<ISessaoPraticaRepository>();
+            var atividadeRepoMock = new Mock<IAtividadeRepository>();
+            var llmServiceMock = new Mock<ILlmService>();
+
+            var sessao = new SessaoPratica(idUsuario: 1, idMateria: 10, idsAtividades: new[] { 5, 6, 7 }, idModulo: 3);
+            sessaoRepoMock.Setup(r => r.ObterPorIdComTentativasAsync(1)).ReturnsAsync(sessao);
+
+            var service = new ResponderSessaoPraticaService(
+                sessaoRepoMock.Object, atividadeRepoMock.Object, llmServiceMock.Object);
+
+            Func<Task> act = async () => await service.ExecutarAsync(1, idSessao: 1, idAtividade: 42, resposta: "A");
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("Essa questão não pertence a esta sessão de prática.");
+
+            sessao.Tentativas.Should().BeEmpty();
+            atividadeRepoMock.Verify(r => r.ObterPorIdAsync(It.IsAny<int>()), Times.Never);
+            llmServiceMock.Verify(
+                l => l.AvaliarRespostaAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TipoAtividade>()), Times.Never);
+            sessaoRepoMock.Verify(r => r.AtualizarAsync(It.IsAny<SessaoPratica>()), Times.Never);
         }
     }
 }

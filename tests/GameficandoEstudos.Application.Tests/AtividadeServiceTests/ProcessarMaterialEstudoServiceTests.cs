@@ -18,6 +18,7 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
         private readonly Mock<ICaixaFontesRepository> _caixaFontesRepositoryMock;
         private readonly Mock<IAuditoriaService> _auditoriaServiceMock;
         private readonly Mock<IDivisorDeTextoService> _divisorDeTextoServiceMock;
+        private readonly Mock<IModuloRepository> _moduloRepositoryMock;
         private readonly ProcessarMaterialEstudoService _service;
 
         public ProcessarMaterialEstudoServiceTests()
@@ -27,13 +28,15 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
             _caixaFontesRepositoryMock = new Mock<ICaixaFontesRepository>();
             _auditoriaServiceMock = new Mock<IAuditoriaService>();
             _divisorDeTextoServiceMock = new Mock<IDivisorDeTextoService>();
+            _moduloRepositoryMock = new Mock<IModuloRepository>();
 
             _service = new ProcessarMaterialEstudoService(
                 _llmServiceMock.Object,
                 _materiaRepositoryMock.Object,
                 _caixaFontesRepositoryMock.Object,
                 _auditoriaServiceMock.Object,
-                _divisorDeTextoServiceMock.Object
+                _divisorDeTextoServiceMock.Object,
+                _moduloRepositoryMock.Object
             );
         }
 
@@ -199,6 +202,58 @@ namespace GameficandoEstudos.Application.Tests.AtividadeServiceTests
 
             _caixaFontesRepositoryMock.Verify(r => r.AdicionarAsync(It.IsAny<CaixaFontes>()), Times.Once);
             chunksSalvos.Should().OnlyContain(c => c.IdCaixaFonte == idCaixa);
+        }
+
+        [Fact]
+        public async Task ProcessarTextoAsync_QuandoModuloEhDeOutraMateria_DeveLancarExcecaoSemGerarEmbeddings()
+        {
+            var idMateria = 1;
+            var idProfessor = 1;
+
+            _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(idMateria))
+                .ReturnsAsync(new Materia("Redes", 60, "Média", idProfessor));
+            _moduloRepositoryMock.Setup(r => r.ObterPorIdAsync(5))
+                .ReturnsAsync(new Modulo("Módulo de outra matéria", idMateria: 99));
+
+            Func<Task> act = async () =>
+                await _service.ProcessarTextoAsync(idMateria, "Livro Teste", "Conteúdo do livro.", idProfessor, idModulo: 5);
+
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("Módulo não encontrado nesta matéria.");
+
+            _llmServiceMock.Verify(l => l.GerarEmbeddingsAsync(It.IsAny<string>()), Times.Never);
+            _caixaFontesRepositoryMock.Verify(r => r.AdicionarChunksAsync(It.IsAny<IEnumerable<FonteChunks>>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ProcessarTextoAsync_ComModuloDaMateria_DeveSalvarTodosOsTrechosNoModulo()
+        {
+            var idMateria = 1;
+            var idProfessor = 1;
+            var idModulo = 5;
+
+            var caixa = new CaixaFontes("Base de Conhecimento - Matéria 1", idMateria);
+            typeof(CaixaFontes).GetProperty("Id")?.SetValue(caixa, 7);
+
+            _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(idMateria))
+                .ReturnsAsync(new Materia("Redes", 60, "Média", idProfessor));
+            _moduloRepositoryMock.Setup(r => r.ObterPorIdAsync(idModulo))
+                .ReturnsAsync(new Modulo("Camada de rede", idMateria));
+            _caixaFontesRepositoryMock.Setup(r => r.ObterPorMateriaAsync(idMateria)).ReturnsAsync(caixa);
+            _divisorDeTextoServiceMock.Setup(d => d.Dividir(It.IsAny<string>()))
+                .Returns(new[] { "Primeiro trecho.", "Segundo trecho." });
+            _llmServiceMock.Setup(l => l.GerarEmbeddingsAsync(It.IsAny<string>())).ReturnsAsync(new float[] { 0.1f });
+
+            var chunksSalvos = new List<FonteChunks>();
+            _caixaFontesRepositoryMock
+                .Setup(r => r.AdicionarChunksAsync(It.IsAny<IEnumerable<FonteChunks>>()))
+                .Callback<IEnumerable<FonteChunks>>(chunks => chunksSalvos.AddRange(chunks))
+                .Returns(Task.CompletedTask);
+
+            await _service.ProcessarTextoAsync(idMateria, "Apostila", "Conteúdo do livro.", idProfessor, idModulo);
+
+            chunksSalvos.Should().HaveCount(2);
+            chunksSalvos.Should().OnlyContain(c => c.IdModulo == idModulo);
         }
     }
 }

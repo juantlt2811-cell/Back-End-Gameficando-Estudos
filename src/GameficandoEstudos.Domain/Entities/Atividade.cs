@@ -11,29 +11,27 @@ namespace GameficandoEstudos.Domain.Entities
         public string Nome { get; private set; }
         public TipoAtividade Tipo { get; private set; }
 
-        /// <summary>
-        /// Apenas o enunciado da questão. As opções (quando houver) ficam em <see cref="Alternativas"/>,
-        /// para que o cliente não precise reinterpretar uma string única com regex.
-        /// </summary>
+        
         public string Conteudo { get; private set; }
 
-        /// <summary>
-        /// Opções de resposta, uma por item (ex.: "A) Texto da opção"). Só é preenchida quando
-        /// <see cref="Tipo"/> é <see cref="TipoAtividade.MultiplaEscolha"/>; para os demais tipos fica vazia.
-        /// </summary>
         public List<string> Alternativas { get; private set; } = new();
 
         public string Gabarito { get; private set; }
         public int IdMateria { get; private set; }
+
+        
+        public int? IdModulo { get; private set; }
         public DateTime CriadoEm { get; private set; }
         public DateTime AtualizadoEm { get; private set; }
 
         public bool Ativa { get; private set; }
 
         public Materia Materia { get; private set; }
+        public Modulo? Modulo { get; private set; }
 
         private Atividade() { }
-        public Atividade(string nome, TipoAtividade tipo, string conteudo, string gabarito, int idMateria, IEnumerable<string>? alternativas = null)
+        public Atividade(string nome, TipoAtividade tipo, string conteudo, string gabarito, int idMateria,
+            IEnumerable<string>? alternativas = null, int? idModulo = null)
         {
             ArgumentException.ThrowIfNullOrEmpty(nome, nameof(nome));
             ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
@@ -45,6 +43,9 @@ namespace GameficandoEstudos.Domain.Entities
             if (idMateria <= 0)
                 throw new ArgumentException("Id da matéria inválido.", nameof(idMateria));
 
+            if (idModulo.HasValue && idModulo.Value <= 0)
+                throw new ArgumentException("Id do módulo inválido.", nameof(idModulo));
+
             var alternativasValidadas = ValidarAlternativas(tipo, alternativas);
 
             Nome = nome;
@@ -53,10 +54,21 @@ namespace GameficandoEstudos.Domain.Entities
             Alternativas = alternativasValidadas;
             Gabarito = gabarito;
             IdMateria = idMateria;
+            IdModulo = idModulo;
             CriadoEm = DateTime.UtcNow;
             AtualizadoEm = DateTime.UtcNow;
 
             Ativa = true;
+        }
+
+        
+        public void MoverParaModulo(int? idModulo)
+        {
+            if (idModulo.HasValue && idModulo.Value <= 0)
+                throw new ArgumentException("Id do módulo inválido.", nameof(idModulo));
+
+            IdModulo = idModulo;
+            AtualizadoEm = DateTime.UtcNow;
         }
 
         public void Inativar()
@@ -72,9 +84,6 @@ namespace GameficandoEstudos.Domain.Entities
 
             Nome = nome;
             Conteudo = conteudo;
-            // alternativas == null significa "não informado nesta chamada": preserva as alternativas atuais
-            // em vez de apagá-las, para não quebrar clientes antigos que ainda não enviam esse campo.
-            if (alternativas != null)
                 Alternativas = ValidarAlternativas(Tipo, alternativas);
             Gabarito = gabarito;
             AtualizadoEm = DateTime.UtcNow;
@@ -82,10 +91,6 @@ namespace GameficandoEstudos.Domain.Entities
 
         private static List<string> ValidarAlternativas(TipoAtividade tipo, IEnumerable<string>? alternativas)
         {
-            // alternativas == null significa "não informado" (ex.: chamadas antigas/testes que não lidam
-            // com alternativas). Nesse caso não validamos quantidade — quem efetivamente gera ou edita o
-            // conteúdo de uma atividade de múltipla escolha (GeradorAtividadeService, AtualizarAtividadeService)
-            // sempre passa a lista, então a validação abaixo é o que protege o dado real.
             if (alternativas == null)
                 return new List<string>();
 

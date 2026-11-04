@@ -8,13 +8,18 @@
         public DateTime CriadoEm { get; private set; }
         public DateTime AtualizadoEm { get; private set; }
         public float[] Embeddings { get; private set; }
-        public Guid DocumentoId { get; private set; } 
+        public Guid DocumentoId { get; private set; }
         public string Origem { get; private set; }
+
+        public int? IdModulo { get; private set; }
+
         public CaixaFontes CaixaFonte { get; private set; }
 
         private FonteChunks() { }
-        public FonteChunks(string conteudo, int idCaixaFonte, float[] embeddings, string origem, Guid documentoId)
+        public FonteChunks(string conteudo, int idCaixaFonte, float[] embeddings, string origem, Guid documentoId, int? idModulo = null)
         {
+            if (idModulo.HasValue && idModulo.Value <= 0)
+                throw new ArgumentException("Id do módulo inválido.", nameof(idModulo));
             ArgumentException.ThrowIfNullOrEmpty(conteudo, nameof(conteudo));
             ArgumentException.ThrowIfNullOrEmpty(origem, nameof(origem));
             if (idCaixaFonte <= 0)
@@ -27,6 +32,7 @@
             Embeddings = embeddings;
             Origem = origem;
             DocumentoId = documentoId;
+            IdModulo = idModulo;
             CriadoEm = DateTime.UtcNow;
             AtualizadoEm = DateTime.UtcNow;
         }

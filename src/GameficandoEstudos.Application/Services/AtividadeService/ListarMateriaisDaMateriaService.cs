@@ -26,7 +26,7 @@ namespace GameficandoEstudos.Application.Services.AtividadeService
 
             var resumos = await _caixaFontesRepository.PesquisarResumoMateriaisAsync(request.IdMateria, request.TermoPesquisa);
 
-            return resumos.Select(r => new MaterialBaseConhecimentoDto(r.DocumentoId, r.Titulo, r.QuantidadeChunks, r.UltimaAtualizacao));
+            return resumos.Select(r => new MaterialBaseConhecimentoDto(r.DocumentoId, r.Titulo, r.QuantidadeChunks, r.UltimaAtualizacao, r.IdModulo));
         }
     }
 }

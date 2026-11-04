@@ -10,11 +10,17 @@ namespace GameficandoEstudos.Domain.Entities
         public int Id { get; private set; }
         public int IdUsuario { get; private set; }
         public int IdMateria { get; private set; }
+
+        public int? IdModulo { get; private set; }
+
         public StatusSessaoPratica Status { get; private set; }
         public int TotalQuestoes { get; private set; }
         public int TotalAcertos { get; private set; }
         public DateTime IniciadaEm { get; private set; }
         public DateTime? ConcluidaEm { get; private set; }
+
+        
+        public List<int> IdsAtividades { get; private set; } = new();
 
         public Usuario Usuario { get; private set; }
         public Materia Materia { get; private set; }
@@ -24,18 +30,26 @@ namespace GameficandoEstudos.Domain.Entities
 
         private SessaoPratica() { }
 
-        public SessaoPratica(int idUsuario, int idMateria, int totalQuestoes)
+        public SessaoPratica(int idUsuario, int idMateria, IEnumerable<int> idsAtividades, int? idModulo = null)
         {
             if (idUsuario <= 0) throw new ArgumentException("Id do usuário inválido.", nameof(idUsuario));
             if (idMateria <= 0) throw new ArgumentException("Id da matéria inválido.", nameof(idMateria));
-            if (totalQuestoes <= 0) throw new ArgumentException("A sessão precisa de ao menos uma questão.", nameof(totalQuestoes));
+            if (idModulo.HasValue && idModulo.Value <= 0) throw new ArgumentException("Id do módulo inválido.", nameof(idModulo));
+
+            var ids = (idsAtividades ?? Enumerable.Empty<int>()).Distinct().ToList();
+            if (ids.Count == 0) throw new ArgumentException("A sessão precisa de ao menos uma questão.", nameof(idsAtividades));
 
             IdUsuario = idUsuario;
             IdMateria = idMateria;
-            TotalQuestoes = totalQuestoes;
+            IdModulo = idModulo;
+            IdsAtividades = ids;
+            TotalQuestoes = ids.Count;
             Status = StatusSessaoPratica.EmAndamento;
             IniciadaEm = DateTime.UtcNow;
         }
+
+        public bool ContemQuestao(int idAtividade) =>
+            IdsAtividades.Count == 0 || IdsAtividades.Contains(idAtividade);
 
         public void RegistrarTentativa(TentativaResposta tentativa)
         {

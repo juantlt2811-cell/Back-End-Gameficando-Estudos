@@ -65,7 +65,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1)).ReturnsAsync(aluno);
             materiaRepoMock.Setup(r => r.ObterPorIdAsync(10)).ReturnsAsync(materia);
-            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10)).ReturnsAsync(0);
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, null)).ReturnsAsync(0);
 
             var service = new VerificarPodeIniciarSessaoService(
                 usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
@@ -92,7 +92,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1)).ReturnsAsync(aluno);
             materiaRepoMock.Setup(r => r.ObterPorIdAsync(10)).ReturnsAsync(materia);
-            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10)).ReturnsAsync(5);
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, null)).ReturnsAsync(5);
 
             var service = new VerificarPodeIniciarSessaoService(
                 usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
@@ -119,7 +119,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1)).ReturnsAsync(aluno);
             materiaRepoMock.Setup(r => r.ObterPorIdAsync(10)).ReturnsAsync(materia);
-            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10)).ReturnsAsync(8); 
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, null)).ReturnsAsync(8); 
 
             var service = new VerificarPodeIniciarSessaoService(
                 usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
@@ -130,6 +130,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
             resultado.Motivo.Should().BeNull();
             resultado.TentativasRestantesHoje.Should().Be(2); 
             resultado.TotalQuestoesDisponiveis.Should().Be(5); 
+            resultado.TotalQuestoesNoRecorte.Should().Be(8);
         }
 
         [Fact]
@@ -147,7 +148,7 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1)).ReturnsAsync(aluno);
             materiaRepoMock.Setup(r => r.ObterPorIdAsync(10)).ReturnsAsync(materia);
-            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10)).ReturnsAsync(3);
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, null)).ReturnsAsync(3);
 
             var service = new VerificarPodeIniciarSessaoService(
                 usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
@@ -156,6 +157,58 @@ namespace GameficandoEstudos.Application.Tests.SessaoPraticaServiceTests
 
             resultado.PodeIniciar.Should().BeTrue();
             resultado.TentativasRestantesHoje.Should().Be(3); 
+        }
+
+        [Theory]
+        [InlineData(TamanhoSessao.Curta, 25, 5)]
+        [InlineData(TamanhoSessao.Media, 25, 10)]
+        [InlineData(TamanhoSessao.Longa, 25, 20)]
+        [InlineData(TamanhoSessao.Longa, 8, 8)]
+        [InlineData(TamanhoSessao.Todas, 25, 25)]
+        public async Task ExecutarAsync_DeveLimitarQuestoesDisponiveisPeloTamanhoEscolhido(
+            TamanhoSessao tamanho, int totalNoModulo, int esperadas)
+        {
+            var usuarioRepoMock = new Mock<IUsuarioRepository>();
+            var materiaRepoMock = new Mock<IMateriaRepository>();
+            var atividadeRepoMock = new Mock<IAtividadeRepository>();
+
+            usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1))
+                .ReturnsAsync(new Usuario("Aluno Teste", "aluno@teste.com", "senha123", TipoUsuario.Aluno));
+            materiaRepoMock.Setup(r => r.ObterPorIdAsync(10))
+                .ReturnsAsync(new Materia("Matematica", 40, "Facil", idProfessor: 2));
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, 7)).ReturnsAsync(totalNoModulo);
+
+            var service = new VerificarPodeIniciarSessaoService(
+                usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
+
+            var resultado = await service.ExecutarAsync(1, idMateria: 10, idModulo: 7, tamanho: tamanho);
+
+            resultado.PodeIniciar.Should().BeTrue();
+            resultado.TotalQuestoesDisponiveis.Should().Be(esperadas);
+            resultado.TotalQuestoesNoRecorte.Should().Be(totalNoModulo);
+        }
+
+        [Fact]
+        public async Task ExecutarAsync_QuandoModuloSemQuestoes_DeveRetornarMotivoDoModulo()
+        {
+            var usuarioRepoMock = new Mock<IUsuarioRepository>();
+            var materiaRepoMock = new Mock<IMateriaRepository>();
+            var atividadeRepoMock = new Mock<IAtividadeRepository>();
+
+            usuarioRepoMock.Setup(r => r.ObterPorIdAsync(1))
+                .ReturnsAsync(new Usuario("Aluno Teste", "aluno@teste.com", "senha123", TipoUsuario.Aluno));
+            materiaRepoMock.Setup(r => r.ObterPorIdAsync(10))
+                .ReturnsAsync(new Materia("Matematica", 40, "Facil", idProfessor: 2));
+            atividadeRepoMock.Setup(r => r.ContarAtivasPorMateriaAsync(10, 7)).ReturnsAsync(0);
+
+            var service = new VerificarPodeIniciarSessaoService(
+                usuarioRepoMock.Object, materiaRepoMock.Object, atividadeRepoMock.Object);
+
+            var resultado = await service.ExecutarAsync(1, idMateria: 10, idModulo: 7);
+
+            resultado.PodeIniciar.Should().BeFalse();
+            resultado.Motivo.Should().Be("Este módulo ainda não possui questões disponíveis.");
+            resultado.TotalQuestoesNoRecorte.Should().Be(0);
         }
     }
 }
