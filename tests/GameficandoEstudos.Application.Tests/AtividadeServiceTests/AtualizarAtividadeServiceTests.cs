@@ -1,6 +1,8 @@
 ﻿    using FluentAssertions;
     using Moq;
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Xunit;
     using GameficandoEstudos.Application.DTOs;
@@ -86,6 +88,60 @@
                 _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
                 _auditoriaServiceMock.Verify(a => a.RegistrarAsync(
                     It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            }
+            [Fact]
+            public async Task ExecutarAsync_QuandoAlternativasNaoForemInformadas_DevePreservarAsAtuais()
+            {
+                var professorId = 1;
+                var atividade = new Atividade("Tema", TipoAtividade.MultiplaEscolha, "Pergunta", "A", 10,
+                    new[] { "A) Um", "B) Dois" });
+                var materia = new Materia("Matemática", 40, "Fácil", professorId);
+                var dto = new AtualizarAtividadeDto(1, "Novo nome", "Nova pergunta", "B"); // sem alternativas
+
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
+                _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
+
+                await _service.ExecutarAsync(dto, professorId);
+
+                atividade.Alternativas.Should().Equal("A) Um", "B) Dois");
+                atividade.Nome.Should().Be("Novo nome");
+            }
+
+            [Fact]
+            public async Task ExecutarAsync_QuandoAlternativasForemInformadas_DeveSubstituirAsAtuais()
+            {
+                var professorId = 1;
+                var atividade = new Atividade("Tema", TipoAtividade.MultiplaEscolha, "Pergunta", "A", 10,
+                    new[] { "A) Um", "B) Dois" });
+                var materia = new Materia("Matemática", 40, "Fácil", professorId);
+                var dto = new AtualizarAtividadeDto(1, "Tema", "Pergunta", "C",
+                    new List<string> { "A) Três", "B) Quatro", "C) Cinco" });
+
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
+                _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
+
+                await _service.ExecutarAsync(dto, professorId);
+
+                atividade.Alternativas.Should().Equal("A) Três", "B) Quatro", "C) Cinco");
+            }
+
+            [Fact]
+            public async Task ExecutarAsync_QuandoMultiplaEscolhaRecebeMenosDeDuasAlternativas_DeveLancarArgumentException()
+            {
+                var professorId = 1;
+                var atividade = new Atividade("Tema", TipoAtividade.MultiplaEscolha, "Pergunta", "A", 10,
+                    new[] { "A) Um", "B) Dois" });
+                var materia = new Materia("Matemática", 40, "Fácil", professorId);
+                var dto = new AtualizarAtividadeDto(1, "Tema", "Pergunta", "A", new List<string> { "A) Só uma" });
+
+                _atividadeRepositoryMock.Setup(r => r.ObterPorIdAsync(dto.Id)).ReturnsAsync(atividade);
+                _materiaRepositoryMock.Setup(r => r.ObterPorIdAsync(atividade.IdMateria)).ReturnsAsync(materia);
+
+                Func<Task> act = async () => await _service.ExecutarAsync(dto, professorId);
+
+                await act.Should().ThrowAsync<ArgumentException>();
+                atividade.Alternativas.Should().Equal("A) Um", "B) Dois"); // não alterou o que já existia
+                _atividadeRepositoryMock.Verify(r => r.AtualizarAsync(It.IsAny<Atividade>()), Times.Never);
             }
         }
     }
