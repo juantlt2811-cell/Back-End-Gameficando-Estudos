@@ -3,6 +3,7 @@ using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Domain.Entities;
 using GameficandoEstudos.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace GameficandoEstudos.Infrastructure.Repositories;
 
@@ -18,7 +19,7 @@ public class ModuloRepository : IModuloRepository
     public async Task<Modulo> AdicionarAsync(Modulo modulo)
     {
         await _context.Modulos.AddAsync(modulo);
-        await _context.SaveChangesAsync();
+        await SalvarTratandoNomeDuplicadoAsync();
         return modulo;
     }
 
@@ -77,12 +78,25 @@ public class ModuloRepository : IModuloRepository
     public async Task AtualizarAsync(Modulo modulo)
     {
         _context.Modulos.Update(modulo);
-        await _context.SaveChangesAsync();
+        await SalvarTratandoNomeDuplicadoAsync();
     }
 
     public async Task RemoverAsync(Modulo modulo)
     {
         _context.Modulos.Remove(modulo);
         await _context.SaveChangesAsync();
+    }
+
+    // O índice único (IdMateria, Nome) é a garantia final; a checagem prévia pode perder uma corrida entre duas requisições.
+    private async Task SalvarTratandoNomeDuplicadoAsync()
+    {
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            throw new InvalidOperationException("Já existe um módulo com esse nome nesta matéria.", ex);
+        }
     }
 }
