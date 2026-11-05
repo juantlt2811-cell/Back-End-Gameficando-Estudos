@@ -21,4 +21,7 @@ RUN apt-get update \
 
 COPY --from=build /app .
 
+# Roda sem root: as imagens aspnet trazem o usuário "app", exposto em $APP_UID.
+USER $APP_UID
+
 ENTRYPOINT ["sh", "-c", "dotnet GameficandoEstudos.Api.dll --urls http://+:${PORT:-8080}"]
