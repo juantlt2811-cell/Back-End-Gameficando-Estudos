@@ -84,7 +84,11 @@ namespace GameficandoEstudos.Domain.Entities
 
             Nome = nome;
             Conteudo = conteudo;
+
+            // alternativas == null significa "não informado nesta chamada": preserva as atuais em vez de apagá-las.
+            if (alternativas != null)
                 Alternativas = ValidarAlternativas(Tipo, alternativas);
+
             Gabarito = gabarito;
             AtualizadoEm = DateTime.UtcNow;
         }
