@@ -1,3 +1,4 @@
+﻿using GameficandoEstudos.Api.Health;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Interfaces.Security;
 using GameficandoEstudos.Application.Services.AtividadeService;
@@ -5,6 +6,7 @@ using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using GameficandoEstudos.Application.Validacoes;
 using GameficandoEstudos.Infrastructure.Data;
+using GameficandoEstudos.Infrastructure.Redis;
 using GameficandoEstudos.Infrastructure.Repositories;
 using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
@@ -12,6 +14,7 @@ using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -79,6 +82,11 @@ builder.Services.AddMemoryCache(options =>
 
 
 builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
+
+// Redis e opcional: sem 'Redis:ConnectionString' a API segue com estado em memoria.
+builder.Services.AddRedisOpcional(builder.Configuration);
+builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
 
 
 
@@ -240,6 +248,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();
