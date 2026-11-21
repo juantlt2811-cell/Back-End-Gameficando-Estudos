@@ -1,15 +1,21 @@
-# Redis local para desenvolvimento do Gameficando Estudos.
+# Ambiente local do Gameficando Estudos.
 #
-# Subir:    docker compose up -d redis
-# Testar:   docker compose exec redis redis-cli ping     (responde PONG)
-# Parar:    docker compose down
+# So o Redis (Partes 1-4):
+#   docker compose up -d redis
+#   docker compose exec redis redis-cli ping           (responde PONG)
+#
+# Redis + 2 replicas da API atras de um balanceador (Parte 5):
+#   docker compose --profile cluster up -d --build
+#   -> a API fica em http://localhost:8080 (nginx alterna entre api1 e api2)
+#   docker compose --profile cluster down              (para tudo)
 #
 # Os dados do Redis sao efemeros de proposito: so guardam contadores
 # (tentativas de login, rate limit). Se o container reiniciar, os contadores zeram.
 #
-# A porta fica exposta apenas em 127.0.0.1 (so a sua maquina acessa).
-# A senha e OPCIONAL: sem .env, o Redis sobe sem senha. Se quiser uma,
-# defina REDIS_PASSWORD no ambiente ou em um arquivo .env (lido so pelo Compose).
+# As portas ficam expostas apenas em 127.0.0.1 (so a sua maquina acessa).
+# A senha do Redis e OPCIONAL: sem .env, ele sobe sem senha. Se quiser uma,
+# defina REDIS_PASSWORD no ambiente ou em um arquivo .env (lido so pelo Compose)
+# e inclua ",password=..." em Redis__ConnectionString das replicas.
 services:
   redis:
     image: redis:8-alpine
@@ -30,3 +36,39 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # --- Parte 5: replicas da API (so sobem com --profile cluster) ---
+  #
+  # Os segredos (banco, JWT, chaves de LLM...) vem do mesmo user-secrets que voce
+  # ja usa com "dotnet run": a pasta de segredos do Windows e montada, somente
+  # leitura, dentro do container. Nada de segredo vai para o repositorio.
+  # Isso vale para Windows (usa %APPDATA%). O Redis e apontado para o servico
+  # "redis" da rede do Compose, sobrepondo o 127.0.0.1 do user-secrets.
+  api1: &api
+    profiles: ["cluster"]
+    build: .
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      HOME: /home/app
+      Redis__ConnectionString: redis:6379
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets/199d08bf-85af-4b9c-b261-405e399d4b11:/home/app/.microsoft/usersecrets/199d08bf-85af-4b9c-b261-405e399d4b11:ro
+
+  api2:
+    <<: *api
+
+  balanceador:
+    profiles: ["cluster"]
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - api1
+      - api2
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
