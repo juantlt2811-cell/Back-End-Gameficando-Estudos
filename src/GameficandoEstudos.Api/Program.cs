@@ -81,7 +81,12 @@ builder.Services.AddMemoryCache(options =>
 });
 
 
-builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
+// Contagem local (sempre registrada: e o proprio guard sem Redis e o fallback com Redis).
+builder.Services.AddSingleton<LoginAttemptGuard>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Redis:ConnectionString"]))
+    builder.Services.AddSingleton<ILoginAttemptGuard, RedisLoginAttemptGuard>();
+else
+    builder.Services.AddSingleton<ILoginAttemptGuard>(sp => sp.GetRequiredService<LoginAttemptGuard>());
 
 // Redis e opcional: sem 'Redis:ConnectionString' a API segue com estado em memoria.
 builder.Services.AddRedisOpcional(builder.Configuration);
