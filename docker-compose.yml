@@ -1,0 +1,32 @@
+# Redis local para desenvolvimento do Gameficando Estudos.
+#
+# Subir:    docker compose up -d redis
+# Testar:   docker compose exec redis redis-cli ping     (responde PONG)
+# Parar:    docker compose down
+#
+# Os dados do Redis sao efemeros de proposito: so guardam contadores
+# (tentativas de login, rate limit). Se o container reiniciar, os contadores zeram.
+#
+# A porta fica exposta apenas em 127.0.0.1 (so a sua maquina acessa).
+# A senha e OPCIONAL: sem .env, o Redis sobe sem senha. Se quiser uma,
+# defina REDIS_PASSWORD no ambiente ou em um arquivo .env (lido so pelo Compose).
+services:
+  redis:
+    image: redis:8-alpine
+    container_name: gameficando-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command:
+      - sh
+      - -c
+      - 'exec redis-server $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"} --save "" --appendonly no --maxmemory 64mb --maxmemory-policy volatile-lru'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - '[ -n "$$REDIS_PASSWORD" ] && export REDISCLI_AUTH="$$REDIS_PASSWORD"; redis-cli ping | grep -q PONG'
+      interval: 10s
+      timeout: 3s
+      retries: 5
