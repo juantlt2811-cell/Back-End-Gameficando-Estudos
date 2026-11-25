@@ -1,3 +1,4 @@
+﻿using GameficandoEstudos.Api.Health;
 using GameficandoEstudos.Application.Interfaces;
 using GameficandoEstudos.Application.Interfaces.Security;
 using GameficandoEstudos.Application.Services.AtividadeService;
@@ -5,6 +6,8 @@ using GameficandoEstudos.Application.Services.MateriaService;
 using GameficandoEstudos.Application.Services.UsuarioService;
 using GameficandoEstudos.Application.Validacoes;
 using GameficandoEstudos.Infrastructure.Data;
+using GameficandoEstudos.Infrastructure.Redis;
+using GameficandoEstudos.Infrastructure.RateLimiting;
 using GameficandoEstudos.Infrastructure.Repositories;
 using GameficandoEstudos.Infrastructure.Security;
 using GameficandoEstudos.Infrastructure.Services;
@@ -12,6 +15,7 @@ using GameficandoEstudos.Infrastructure.Services.FakeServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Http.Resilience;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -43,26 +47,44 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
+    options.OnRejected = async (contexto, cancellationToken) =>
+    {
+        var resposta = contexto.HttpContext.Response;
+        resposta.StatusCode = StatusCodes.Status429TooManyRequests;
+
+        if (contexto.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            && retryAfter is TimeSpan espera)
+        {
+            resposta.Headers.RetryAfter = ((int)Math.Ceiling(espera.TotalSeconds)).ToString();
+        }
+
+        await resposta.WriteAsJsonAsync(
+            new { Erro = "Muitas requisições. Aguarde um momento e tente novamente." },
+            cancellationToken);
+    };
+
     options.AddPolicy("auth", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
+        RedisRateLimitPartitions.JanelaFixa(
+            httpContext.RequestServices,
+            politica: "auth",
+            chave: "ip:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido"),
+            limite: 10,
+            janela: TimeSpan.FromMinutes(1)));
 
     options.AddPolicy("ia", httpContext =>
-    RateLimitPartition.GetFixedWindowLimiter(
-        partitionKey: httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                      ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
-        factory: _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 20,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0
-        }));
+    {
+        var idUsuario = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var chave = idUsuario is not null
+            ? "u:" + idUsuario
+            : "ip:" + (httpContext.Connection.RemoteIpAddress?.ToString() ?? "desconhecido");
+
+        return RedisRateLimitPartitions.JanelaFixa(
+            httpContext.RequestServices,
+            politica: "ia",
+            chave: chave,
+            limite: 20,
+            janela: TimeSpan.FromMinutes(1));
+    });
 });
 
 
@@ -78,7 +100,17 @@ builder.Services.AddMemoryCache(options =>
 });
 
 
-builder.Services.AddSingleton<ILoginAttemptGuard, LoginAttemptGuard>();
+// Contagem local (sempre registrada: e o proprio guard sem Redis e o fallback com Redis).
+builder.Services.AddSingleton<LoginAttemptGuard>();
+if (!string.IsNullOrWhiteSpace(builder.Configuration["Redis:ConnectionString"]))
+    builder.Services.AddSingleton<ILoginAttemptGuard, RedisLoginAttemptGuard>();
+else
+    builder.Services.AddSingleton<ILoginAttemptGuard>(sp => sp.GetRequiredService<LoginAttemptGuard>());
+
+// Redis e opcional: sem 'Redis:ConnectionString' a API segue com estado em memoria.
+builder.Services.AddRedisOpcional(builder.Configuration);
+builder.Services.AddHealthChecks()
+    .AddCheck<RedisHealthCheck>("redis", failureStatus: HealthStatus.Degraded);
 
 
 
@@ -240,6 +272,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 app.Run();

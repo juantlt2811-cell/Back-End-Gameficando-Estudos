@@ -2,8 +2,8 @@
 {
     public interface ILoginAttemptGuard
     {
-        bool EstaBloqueado(string email);
-        void RegistrarFalha(string email);
-        void RegistrarSucesso(string email);
+        Task<bool> EstaBloqueadoAsync(string email);
+        Task RegistrarFalhaAsync(string email);
+        Task RegistrarSucessoAsync(string email);
     }
 }

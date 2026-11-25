@@ -25,7 +25,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
 
             var dto = new LoginDto("bloqueado@email.com", "senha123");
 
-            loginAttemptGuardMock.Setup(g => g.EstaBloqueado(dto.Email)).Returns(true);
+            loginAttemptGuardMock.Setup(g => g.EstaBloqueadoAsync(dto.Email)).ReturnsAsync(true);
 
             var service = new AutenticarUsuarioService(
                 usuarioRepoMock.Object,
@@ -40,7 +40,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
                 .WithMessage("E-mail ou senha incorretos.");
 
             usuarioRepoMock.Verify(repo => repo.ObterPorEmailAsync(It.IsAny<string>()), Times.Never);
-            loginAttemptGuardMock.Verify(g => g.RegistrarFalha(It.IsAny<string>()), Times.Never);
+            loginAttemptGuardMock.Verify(g => g.RegistrarFalhaAsync(It.IsAny<string>()), Times.Never);
             refreshTokenRepoMock.Verify(r => r.AdicionarAsync(It.IsAny<RefreshToken>()), Times.Never);
         }
 
@@ -55,7 +55,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
 
             var dto = new LoginDto("inexistente@email.com", "senha123");
 
-            loginAttemptGuardMock.Setup(g => g.EstaBloqueado(dto.Email)).Returns(false);
+            loginAttemptGuardMock.Setup(g => g.EstaBloqueadoAsync(dto.Email)).ReturnsAsync(false);
             usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email))
                            .ReturnsAsync((Usuario?)null);
 
@@ -71,7 +71,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
             await act.Should().ThrowAsync<UnauthorizedAccessException>()
                 .WithMessage("E-mail ou senha incorretos.");
 
-            loginAttemptGuardMock.Verify(g => g.RegistrarFalha(dto.Email), Times.Once);
+            loginAttemptGuardMock.Verify(g => g.RegistrarFalhaAsync(dto.Email), Times.Once);
             refreshTokenRepoMock.Verify(r => r.AdicionarAsync(It.IsAny<RefreshToken>()), Times.Never);
         }
 
@@ -87,7 +87,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
             var dto = new LoginDto("usuario@email.com", "senha_errada");
             var usuarioFake = new Usuario("Nome", dto.Email, "hash_senha_correta", TipoUsuario.Professor);
 
-            loginAttemptGuardMock.Setup(g => g.EstaBloqueado(dto.Email)).Returns(false);
+            loginAttemptGuardMock.Setup(g => g.EstaBloqueadoAsync(dto.Email)).ReturnsAsync(false);
             usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
             passwordServiceMock.Setup(p => p.VerifyPassword(usuarioFake.Senha, dto.Senha)).Returns(false);
 
@@ -104,7 +104,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
                 .WithMessage("E-mail ou senha incorretos.");
 
             tokenServiceMock.Verify(t => t.GerarToken(It.IsAny<Usuario>()), Times.Never);
-            loginAttemptGuardMock.Verify(g => g.RegistrarFalha(dto.Email), Times.Once);
+            loginAttemptGuardMock.Verify(g => g.RegistrarFalhaAsync(dto.Email), Times.Once);
             refreshTokenRepoMock.Verify(r => r.AdicionarAsync(It.IsAny<RefreshToken>()), Times.Never);
         }
 
@@ -123,7 +123,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
 
             string tokenFake = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token_fake";
 
-            loginAttemptGuardMock.Setup(g => g.EstaBloqueado(dto.Email)).Returns(false);
+            loginAttemptGuardMock.Setup(g => g.EstaBloqueadoAsync(dto.Email)).ReturnsAsync(false);
             usuarioRepoMock.Setup(repo => repo.ObterPorEmailAsync(dto.Email)).ReturnsAsync(usuarioFake);
             passwordServiceMock.Setup(p => p.VerifyPassword(usuarioFake.Senha, dto.Senha)).Returns(true);
             tokenServiceMock.Setup(t => t.GerarToken(usuarioFake)).Returns(tokenFake);
@@ -146,7 +146,7 @@ namespace GameficandoEstudos.Application.Tests.UsuarioServiceTests
             resultado.TipoUsuario.Should().Be(TipoUsuario.Professor);
 
             tokenServiceMock.Verify(t => t.GerarToken(usuarioFake), Times.Once);
-            loginAttemptGuardMock.Verify(g => g.RegistrarSucesso(dto.Email), Times.Once);
+            loginAttemptGuardMock.Verify(g => g.RegistrarSucessoAsync(dto.Email), Times.Once);
             refreshTokenRepoMock.Verify(r => r.AdicionarAsync(It.Is<RefreshToken>(
                 rt => rt.IdUsuario == 42)), Times.Once);
         }

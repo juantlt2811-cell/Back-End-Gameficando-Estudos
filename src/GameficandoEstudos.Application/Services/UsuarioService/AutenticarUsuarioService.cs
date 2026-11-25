@@ -28,24 +28,24 @@ public class AutenticarUsuarioService
 
     public async Task<AuthResultDto> ExecutarAsync(LoginDto dto)
     {
-        if (_loginAttemptGuard.EstaBloqueado(dto.Email))
+        if (await _loginAttemptGuard.EstaBloqueadoAsync(dto.Email))
             throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
 
         var usuario = await _usuarioRepository.ObterPorEmailAsync(dto.Email);
         if (usuario == null)
         {
-            _loginAttemptGuard.RegistrarFalha(dto.Email);
+            await _loginAttemptGuard.RegistrarFalhaAsync(dto.Email);
             throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
         }
 
         bool senhaValida = _passwordService.VerifyPassword(usuario.Senha, dto.Senha);
         if (!senhaValida)
         {
-            _loginAttemptGuard.RegistrarFalha(dto.Email);
+            await _loginAttemptGuard.RegistrarFalhaAsync(dto.Email);
             throw new UnauthorizedAccessException("E-mail ou senha incorretos.");
         }
 
-        _loginAttemptGuard.RegistrarSucesso(dto.Email);
+        await _loginAttemptGuard.RegistrarSucessoAsync(dto.Email);
 
         string accessToken = _tokenService.GerarToken(usuario);
 
